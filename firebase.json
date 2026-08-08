@@ -1,0 +1,31 @@
+{
+  "hosting": {
+    "site": "pvanalysis-68252",
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/node_modules/**",
+      "backend/**",
+      "*.mp4",
+      "*.pptx",
+      "*.ndjson",
+      "*.ipynb",
+      "*.md",
+      "starter.html",
+      "src/**",
+      "package.json",
+      "package-lock.json",
+      "pnpm-lock.yaml",
+      "tsconfig.json",
+      "vite.config.ts"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

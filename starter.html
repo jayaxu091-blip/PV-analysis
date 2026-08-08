@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Pole Vault App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f5f4;
+      color: #17211d;
+    }
+
+    header {
+      background: #12332d;
+      color: white;
+      padding: 24px;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    section {
+      background: white;
+      border: 1px solid #d8e2de;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+      padding: 10px;
+      border: 1px solid #b8c6c1;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    textarea {
+      min-height: 80px;
+    }
+
+    button {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 6px;
+      background: #0f766e;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0b5953;
+    }
+
+    video {
+      width: 100%;
+      max-height: 420px;
+      margin-top: 12px;
+      background: #111;
+    }
+
+    .output {
+      margin-top: 14px;
+      padding: 12px;
+      background: #eef6f4;
+      border-left: 4px solid #0f766e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Pole Vault App</h1>
+    <p>A simple practice page I can edit myself.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Upload Video</h2>
+      <input id="videoInput" type="file" accept="video/*">
+      <video id="vaultVideo" controls></video>
+    </section>
+
+    <section>
+      <h2>Attempt Info</h2>
+
+      <label for="athleteName">Athlete Name</label>
+      <input id="athleteName" type="text" placeholder="Example: Jay">
+
+      <label for="barHeight">Bar Height</label>
+      <input id="barHeight" type="number" placeholder="Example: 10.5">
+
+      <label for="barUnit">Bar Unit</label>
+      <select id="barUnit">
+        <option value="feet">feet</option>
+        <option value="meters">meters</option>
+      </select>
+
+      <label for="result">Result</label>
+      <select id="result">
+        <option value="make">make</option>
+        <option value="miss">miss</option>
+      </select>
+
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Example: good takeoff, late turn"></textarea>
+
+      <button onclick="showSummary()">Show Summary</button>
+
+      <div id="summary" class="output">Your summary will appear here.</div>
+    </section>
+  </main>
+
+  <script>
+    const videoInput = document.getElementById("videoInput");
+    const vaultVideo = document.getElementById("vaultVideo");
+
+    videoInput.addEventListener("change", function () {
+      const file = videoInput.files[0];
+
+      if (file) {
+        vaultVideo.src = URL.createObjectURL(file);
+      }
+    });
+
+    function showSummary() {
+      const athleteName = document.getElementById("athleteName").value;
+      const barHeight = document.getElementById("barHeight").value;
+      const barUnit = document.getElementById("barUnit").value;
+      const result = document.getElementById("result").value;
+      const notes = document.getElementById("notes").value;
+
+      document.getElementById("summary").textContent =
+        athleteName + " attempted " + barHeight + " " + barUnit +
+        " and the result was " + result + ". Notes: " + notes;
+    }
+  </script>
+</body>
+</html>

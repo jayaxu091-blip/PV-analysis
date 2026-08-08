@@ -1,0 +1,11 @@
+# Current server.py uses only Python standard library.
+# These are the next dependencies for the real AI backend upgrade.
+fastapi
+uvicorn[standard]
+opencv-python
+numpy
+
+# Pose engine options for later:
+# mediapipe
+# ultralytics
+# mmpose
