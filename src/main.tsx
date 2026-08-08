@@ -1,5 +1,13 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  type User,
+} from "firebase/auth";
 import "./styles.css";
 import type { Attempt, AttemptForm, Landmark, PhaseStatus, PoseReadout } from "./types";
 import {
@@ -13,6 +21,7 @@ import {
   parseNumber,
   storageKey,
 } from "./utils";
+import { auth, googleProvider } from "./firebase";
 import { clearSavedVideos, deleteSavedVideo, getVideo, saveVideo } from "./videoStore";
 import {
   analyzeVideoFrames,
@@ -38,9 +47,14 @@ const emptyPhaseStatus: PhaseStatus = {
   clearance: "Not marked yet. Pause where the body clears the bar.",
 };
 
-function loadAttempts() {
+function storageKeyForUser(user: User) {
+  return `${storageKey}-${user.uid}`;
+}
+
+function loadAttempts(user: User | null) {
+  if (!user) return [];
   try {
-    return JSON.parse(localStorage.getItem(storageKey) || "[]") as Attempt[];
+    return JSON.parse(localStorage.getItem(storageKeyForUser(user)) || "[]") as Attempt[];
   } catch {
     return [];
   }
@@ -50,7 +64,9 @@ function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [attempts, setAttempts] = useState<Attempt[]>(loadAttempts);
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [form, setForm] = useState<AttemptForm>(emptyForm);
   const [videoFile, setVideoFile] = useState<File | Blob | null>(null);
   const [videoName, setVideoName] = useState("");
@@ -60,6 +76,16 @@ function App() {
   const [poseReadout, setPoseReadout] = useState<PoseReadout>(emptyPoseReadout);
   const [phaseStatus, setPhaseStatus] = useState<PhaseStatus>(emptyPhaseStatus);
   const [poseLandmarks, setPoseLandmarks] = useState<Landmark[] | null>(null);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser);
+      setAttempts(loadAttempts(nextUser));
+      setAuthReady(true);
+      startNewAttempt();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const metrics = useMemo(() => getMetrics(form), [form]);
   const coachFeedback = useMemo(() => buildCoachFeedback(form, metrics), [form, metrics]);
@@ -78,8 +104,9 @@ function App() {
   }
 
   function persistAttempts(next: Attempt[]) {
+    if (!user) return;
     setAttempts(next);
-    localStorage.setItem(storageKey, JSON.stringify(next));
+    localStorage.setItem(storageKeyForUser(user), JSON.stringify(next));
   }
 
   function resetPoseState() {
@@ -359,6 +386,10 @@ function App() {
     persistAttempts(attempts.filter((item) => item.id !== attempt.id));
   }
 
+  async function handleSignOut() {
+    await signOut(auth);
+  }
+
   function exportCsv() {
     const headers = [
       "date",
@@ -481,6 +512,21 @@ function App() {
     canvas.hidden = true;
   }
 
+  if (!authReady) {
+    return (
+      <main>
+        <section className="auth-panel">
+          <h1>VaultLab</h1>
+          <p className="muted">Loading authentication...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   return (
     <>
       <header>
@@ -497,6 +543,10 @@ function App() {
               {attempts.length} {attempts.length === 1 ? "attempt" : "attempts"}
             </div>
             <div className="pill">Best: {bestMake ? bestMake.label : "--"}</div>
+            <div className="pill">{user.email || "Signed in"}</div>
+            <button className="top-button" type="button" onClick={handleSignOut}>
+              Sign out
+            </button>
           </div>
         </div>
       </header>
@@ -683,6 +733,111 @@ function App() {
 function readPhaseTime(status: string) {
   const match = status.match(/Marked at ([0-9.]+)s/);
   return match ? Number.parseFloat(match[1]) : null;
+}
+
+function AuthScreen() {
+  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submitEmailAuth(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+
+    try {
+      if (mode === "sign-in") {
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email.trim(), password);
+      }
+    } catch (authError) {
+      setError(readAuthError(authError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitGoogleAuth() {
+    setError("");
+    setBusy(true);
+
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (authError) {
+      setError(readAuthError(authError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-panel">
+        <div className="brand auth-brand">
+          <div className="mark">VL</div>
+          <div>
+            <h1>VaultLab</h1>
+            <p className="subtitle">Sign in to save your vault analysis log</p>
+          </div>
+        </div>
+
+        <div className="auth-tabs">
+          <button className={mode === "sign-in" ? "" : "secondary"} type="button" onClick={() => setMode("sign-in")}>
+            Sign in
+          </button>
+          <button className={mode === "sign-up" ? "" : "secondary"} type="button" onClick={() => setMode("sign-up")}>
+            Create account
+          </button>
+        </div>
+
+        <form className="auth-form" onSubmit={submitEmailAuth}>
+          <label>
+            Email
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          </label>
+          <label>
+            Password
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required />
+          </label>
+          {error && <p className="auth-error">{error}</p>}
+          <button type="submit" disabled={busy}>
+            {mode === "sign-in" ? "Sign in" : "Create account"}
+          </button>
+        </form>
+
+        <button className="secondary google-button" type="button" onClick={submitGoogleAuth} disabled={busy}>
+          Continue with Google
+        </button>
+        <p className="muted auth-note">Your saved attempts stay private to your sign-in on this browser for now.</p>
+      </section>
+    </main>
+  );
+}
+
+function readAuthError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("auth/configuration-not-found")) {
+    return "Firebase Authentication is not enabled yet. Enable Email/Password and Google sign-in in Firebase Console.";
+  }
+  if (message.includes("auth/operation-not-allowed")) {
+    return "This sign-in method is not enabled yet in Firebase Console.";
+  }
+  if (message.includes("auth/invalid-credential") || message.includes("auth/wrong-password")) {
+    return "Email or password is not correct.";
+  }
+  if (message.includes("auth/email-already-in-use")) {
+    return "This email already has an account. Try signing in.";
+  }
+  if (message.includes("auth/weak-password")) {
+    return "Use a password with at least 6 characters.";
+  }
+  if (message.includes("auth/popup-closed-by-user")) {
+    return "Google sign-in was closed before it finished.";
+  }
+  return message;
 }
 
 function PhaseCard(props: { title: string; status: string; button: string; onClick: () => void }) {
