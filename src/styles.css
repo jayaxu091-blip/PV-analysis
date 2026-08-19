@@ -285,6 +285,12 @@ textarea {
   margin-top: 14px;
 }
 
+.research-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .metric,
 .analysis-panel,
 .phase-card {
@@ -431,6 +437,25 @@ th {
   border-radius: 8px;
 }
 
+.research-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.research-note {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border-left: 4px solid var(--blue);
+  background: #eef5ff;
+  line-height: 1.45;
+}
+
+.research-note span {
+  color: #263531;
+  font-size: 14px;
+}
+
 .auth-page {
   min-height: 100vh;
   display: grid;
@@ -493,6 +518,10 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .research-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .phase-grid {
     grid-template-columns: 1fr;
   }
@@ -522,6 +551,10 @@ th {
   }
 
   .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .research-grid {
     grid-template-columns: 1fr;
   }
 }

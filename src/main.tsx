@@ -47,17 +47,31 @@ const emptyPhaseStatus: PhaseStatus = {
   clearance: "Not marked yet. Pause where the body clears the bar.",
 };
 
-function storageKeyForUser(user: User) {
-  return `${storageKey}-${user.uid}`;
+type ActiveUser = {
+  key: string;
+  label: string;
+  isDemo: boolean;
+};
+
+function storageKeyForActiveUser(activeUser: ActiveUser) {
+  return `${storageKey}-${activeUser.key}`;
 }
 
-function loadAttempts(user: User | null) {
-  if (!user) return [];
+function loadAttempts(activeUser: ActiveUser | null) {
+  if (!activeUser) return [];
   try {
-    return JSON.parse(localStorage.getItem(storageKeyForUser(user)) || "[]") as Attempt[];
+    return JSON.parse(localStorage.getItem(storageKeyForActiveUser(activeUser)) || "[]") as Attempt[];
   } catch {
     return [];
   }
+}
+
+function toActiveUser(user: User): ActiveUser {
+  return {
+    key: user.uid,
+    label: user.email || "Signed in",
+    isDemo: false,
+  };
 }
 
 function App() {
@@ -65,6 +79,7 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [form, setForm] = useState<AttemptForm>(emptyForm);
@@ -76,16 +91,23 @@ function App() {
   const [poseReadout, setPoseReadout] = useState<PoseReadout>(emptyPoseReadout);
   const [phaseStatus, setPhaseStatus] = useState<PhaseStatus>(emptyPhaseStatus);
   const [poseLandmarks, setPoseLandmarks] = useState<Landmark[] | null>(null);
+  const activeUser: ActiveUser | null = user ? toActiveUser(user) : demoMode ? { key: "competition-demo", label: "Demo mode", isDemo: true } : null;
 
   useEffect(() => {
     return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser);
-      setAttempts(loadAttempts(nextUser));
+      const nextActiveUser = nextUser ? toActiveUser(nextUser) : null;
+      setAttempts(loadAttempts(nextActiveUser));
       setAuthReady(true);
-      startNewAttempt();
+      if (nextUser) setDemoMode(false);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    setAttempts(loadAttempts(activeUser));
+    startNewAttempt();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUser?.key]);
 
   const metrics = useMemo(() => getMetrics(form), [form]);
   const coachFeedback = useMemo(() => buildCoachFeedback(form, metrics), [form, metrics]);
@@ -104,9 +126,9 @@ function App() {
   }
 
   function persistAttempts(next: Attempt[]) {
-    if (!user) return;
+    if (!activeUser) return;
     setAttempts(next);
-    localStorage.setItem(storageKeyForUser(user), JSON.stringify(next));
+    localStorage.setItem(storageKeyForActiveUser(activeUser), JSON.stringify(next));
   }
 
   function resetPoseState() {
@@ -387,6 +409,12 @@ function App() {
   }
 
   async function handleSignOut() {
+    if (demoMode) {
+      setDemoMode(false);
+      setAttempts([]);
+      startNewAttempt();
+      return;
+    }
     await signOut(auth);
   }
 
@@ -523,8 +551,8 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <AuthScreen />;
+  if (!activeUser) {
+    return <AuthScreen onDemo={() => setDemoMode(true)} />;
   }
 
   return (
@@ -543,9 +571,9 @@ function App() {
               {attempts.length} {attempts.length === 1 ? "attempt" : "attempts"}
             </div>
             <div className="pill">Best: {bestMake ? bestMake.label : "--"}</div>
-            <div className="pill">{user.email || "Signed in"}</div>
+            <div className="pill">{activeUser?.label}</div>
             <button className="top-button" type="button" onClick={handleSignOut}>
-              Sign out
+              {activeUser?.isDemo ? "Exit demo" : "Sign out"}
             </button>
           </div>
         </div>
@@ -616,6 +644,8 @@ function App() {
               </div>
               <p className="muted">For useful numbers, film from the side with the full runway, box, standards, and bar visible.</p>
             </section>
+
+            <ResearchPanel attempts={attempts} />
 
             <section>
               <div className="log-header">
@@ -735,7 +765,7 @@ function readPhaseTime(status: string) {
   return match ? Number.parseFloat(match[1]) : null;
 }
 
-function AuthScreen() {
+function AuthScreen(props: { onDemo: () => void }) {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -811,9 +841,53 @@ function AuthScreen() {
         <button className="secondary google-button" type="button" onClick={submitGoogleAuth} disabled={busy}>
           Continue with Google
         </button>
+        <button className="secondary google-button" type="button" onClick={props.onDemo} disabled={busy}>
+          Try demo without account
+        </button>
         <p className="muted auth-note">Your saved attempts stay private to your sign-in on this browser for now.</p>
       </section>
     </main>
+  );
+}
+
+function ResearchPanel(props: { attempts: Attempt[] }) {
+  const completeRows = props.attempts.filter(
+    (attempt) =>
+      attempt.result &&
+      attempt.speed !== null &&
+      attempt.takeoffAngle !== null &&
+      attempt.inversionAngle !== null,
+  );
+  const makes = props.attempts.filter((attempt) => attempt.result === "make").length;
+  const makeRate = props.attempts.length ? Math.round((makes / props.attempts.length) * 100) : null;
+  const modelStatus =
+    completeRows.length >= 30
+      ? "Ready for train/test logistic regression"
+      : completeRows.length >= 10
+        ? "Enough for early exploratory modeling"
+        : "Collect more labeled attempts";
+
+  return (
+    <section className="research-panel">
+      <div>
+        <h2>Competition Research Mode</h2>
+        <p className="muted">
+          VaultLab is collecting a labeled dataset for a future make/miss prediction model.
+        </p>
+      </div>
+      <div className="research-grid">
+        <Metric label="Saved attempts" value={String(props.attempts.length)} />
+        <Metric label="Model-ready rows" value={String(completeRows.length)} />
+        <Metric label="Make rate" value={makeRate === null ? "--" : `${makeRate}%`} />
+        <Metric label="Prediction target" value="make / miss" />
+      </div>
+      <div className="research-note">
+        <strong>{modelStatus}</strong>
+        <span>
+          Planned features: approach speed, grip over bar, flight time, takeoff angle, and inversion angle.
+        </span>
+      </div>
+    </section>
   );
 }
 

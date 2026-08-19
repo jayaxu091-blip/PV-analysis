@@ -1,0 +1,5 @@
+*.docx binary
+*.pdf binary
+*.pptx binary
+*.mp4 binary
+*.url text eol=crlf
