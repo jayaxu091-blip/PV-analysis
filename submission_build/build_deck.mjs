@@ -131,7 +131,7 @@ const deck = Presentation.create({ slideSize: { width: W, height: H } });
   title(slide, "Research question: which variables predict success?");
   text(slide, "Can computer vision extract pole-vault technique variables from video and use them to predict whether a jump is a make or miss?", 92, 250, 980, 120, { fontSize: 32, bold: true });
   box(slide, 92, 430, 1000, 94, "#EEF5FF", "#C7D2FE");
-  text(slide, "Planned model: logistic regression because the target label is binary: make or miss.", 122, 460, 930, 38, { fontSize: 25, color: colors.ink });
+  text(slide, "Model: logistic regression trained from labeled makes and misses because the target is binary.", 122, 460, 930, 38, { fontSize: 25, color: colors.ink });
   footer(slide, 3);
   notes(slide, [
     "[Sources] scikit-learn LogisticRegression documentation; project methodology.",
@@ -193,12 +193,12 @@ const deck = Presentation.create({ slideSize: { width: W, height: H } });
 {
   const slide = deck.slides.add();
   slide.background.fill = colors.white;
-  title(slide, "The prototype is already live and demo-ready");
+  title(slide, "The final app is live and demo-ready");
   bullets(slide, [
     "React + Vite + TypeScript web app hosted on Firebase.",
     "Firebase sign-in plus demo mode for judges.",
     "Full-video pose analysis with skeleton overlay.",
-    "Attempt log, CSV export, and research-readiness panel.",
+    "Attempt log, CSV export, and trained vault model panel.",
   ], 90, 236, 850, 25, 62);
   box(slide, 910, 254, 240, 150, "#10231F", "#10231F");
   text(slide, "Live app", 940, 292, 180, 28, { fontSize: 23, bold: true, color: "#8FD6C9", alignment: "center" });
@@ -213,14 +213,14 @@ const deck = Presentation.create({ slideSize: { width: W, height: H } });
 {
   const slide = deck.slides.add();
   slide.background.fill = colors.white;
-  title(slide, "Early result: the honest prototype is more valuable");
+  title(slide, "Early result: honest AI feedback is more valuable");
   text(slide, "Single-camera pose estimates are useful, but not perfect.", 92, 245, 760, 56, { fontSize: 34, bold: true });
   bullets(slide, [
     "Motion blur and occlusion can reduce landmark quality.",
     "Inverted poses are difficult for general pose models.",
     "The app reports estimates and keeps reviewable phase markers.",
   ], 116, 342, 820, 23, 54);
-  addMetric(slide, "Prototype principle", "Estimated", 920, 292);
+  addMetric(slide, "Model principle", "Estimated", 920, 292);
   footer(slide, 7);
   notes(slide, [
     "[Sources] Bissas & Cronin 2026; author research notes.",
@@ -250,15 +250,15 @@ const deck = Presentation.create({ slideSize: { width: W, height: H } });
 {
   const slide = deck.slides.add();
   slide.background.fill = colors.white;
-  title(slide, "Next milestone: validate the model with real attempts");
+  title(slide, "Next milestone: validate and improve the trained model");
   bullets(slide, [
     "Collect 30-50 labeled vault attempts.",
-    "Train logistic regression on exported CSV data.",
+    "Test logistic regression accuracy on held-out attempts.",
     "Report accuracy and most influential variables.",
     "Upgrade pose model with YOLO Pose or RTMPose backend.",
   ], 90, 238, 860, 25, 62);
   addMetric(slide, "Submission status", "Ready", 920, 285);
-  addMetric(slide, "Future model", "YOLO / RTMPose", 920, 425);
+  addMetric(slide, "Next pose model", "YOLO / RTMPose", 920, 425);
   footer(slide, 9);
   notes(slide, [
     "[Sources] Project roadmap; scikit-learn LogisticRegression documentation; author research map.",

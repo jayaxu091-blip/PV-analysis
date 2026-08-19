@@ -62,13 +62,8 @@ export function estimateSpeed(form: AttemptForm) {
 }
 
 export function estimateTechScore(form: AttemptForm) {
-  const takeoff = parseNumber(form.takeoffAngle);
-  const inversion = parseNumber(form.inversionAngle);
-  if (takeoff === null && inversion === null) return null;
-
-  const angleScore = takeoff === null ? 50 : Math.max(0, 100 - Math.abs(20 - takeoff) * 4);
-  const inversionScore = inversion === null ? 50 : Math.max(0, Math.min(100, (inversion / 170) * 100));
-  return Math.round((angleScore + inversionScore) / 2);
+  void form;
+  return null;
 }
 
 export function getMetrics(form: AttemptForm): Metrics {
@@ -150,11 +145,7 @@ export function buildCoachFeedback(form: AttemptForm, metrics: Metrics) {
   }
 
   if (metrics.flightTime !== null) {
-    feedback.push("Phase timing is saved. Future versions can compare takeoff-to-clearance timing across attempts.");
-  }
-
-  if (metrics.techScore !== null && metrics.techScore < 55) {
-    feedback.push("Overall technique score is low because one or more key values are outside the target range. Review the video and compare this attempt with stronger jumps.");
+    feedback.push("Phase timing is saved. Compare takeoff-to-clearance timing across makes and misses in the trained model.");
   }
 
   return feedback.slice(0, 5);

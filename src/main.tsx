@@ -31,6 +31,7 @@ import {
   resetPoseClock,
   seekVideo,
 } from "./poseAnalysis";
+import { formVector, predictVault, trainVaultModel, type TrainedVaultModel, type VaultPrediction } from "./vaultModel";
 
 const emptyPoseReadout: PoseReadout = {
   status: "Pose AI has not analyzed this video yet.",
@@ -111,6 +112,8 @@ function App() {
 
   const metrics = useMemo(() => getMetrics(form), [form]);
   const coachFeedback = useMemo(() => buildCoachFeedback(form, metrics), [form, metrics]);
+  const vaultModel = useMemo(() => trainVaultModel(attempts), [attempts]);
+  const vaultPrediction = useMemo(() => predictVault(vaultModel, formVector(form, metrics)), [vaultModel, form, metrics]);
   const bestMake = useMemo(() => {
     return attempts
       .filter((attempt) => attempt.result === "make")
@@ -645,7 +648,7 @@ function App() {
               <p className="muted">For useful numbers, film from the side with the full runway, box, standards, and bar visible.</p>
             </section>
 
-            <ResearchPanel attempts={attempts} />
+            <ResearchPanel attempts={attempts} model={vaultModel} prediction={vaultPrediction} />
 
             <section>
               <div className="log-header">
@@ -744,8 +747,9 @@ function App() {
                 <Metric label="Approach speed" value={metrics.speed ? `${metrics.speed.toFixed(2)} m/s` : "--"} />
                 <Metric label="Grip over bar" value={metrics.gripOverBar !== null ? `${metrics.gripOverBar.toFixed(2)} m` : "--"} />
                 <Metric label="Flight time" value={metrics.flightTime !== null ? `${metrics.flightTime.toFixed(2)} s` : "--"} />
-                <Metric label="Tech score" value={metrics.techScore !== null ? `${metrics.techScore}/100` : "--"} />
+                <Metric label="Model tech score" value={vaultPrediction.score !== null ? `${vaultPrediction.score}/100` : "--"} />
               </div>
+              <ModelScorePanel prediction={vaultPrediction} />
               <div className="coach-panel">
                 <h3>Coach feedback</h3>
                 <ul className="coach-list">
@@ -850,44 +854,71 @@ function AuthScreen(props: { onDemo: () => void }) {
   );
 }
 
-function ResearchPanel(props: { attempts: Attempt[] }) {
+function ResearchPanel(props: { attempts: Attempt[]; model: TrainedVaultModel; prediction: VaultPrediction }) {
   const completeRows = props.attempts.filter(
     (attempt) =>
       attempt.result &&
       attempt.speed !== null &&
       attempt.takeoffAngle !== null &&
-      attempt.inversionAngle !== null,
+      attempt.inversionAngle !== null &&
+      attempt.gripHeight !== null &&
+      attempt.takeoffTime !== null &&
+      attempt.clearanceTime !== null,
   );
   const makes = props.attempts.filter((attempt) => attempt.result === "make").length;
   const makeRate = props.attempts.length ? Math.round((makes / props.attempts.length) * 100) : null;
-  const modelStatus =
-    completeRows.length >= 30
-      ? "Ready for train/test logistic regression"
-      : completeRows.length >= 10
-        ? "Enough for early exploratory modeling"
-        : "Collect more labeled attempts";
 
   return (
     <section className="research-panel">
       <div>
-        <h2>Competition Research Mode</h2>
+        <h2>Trained Vault Model</h2>
         <p className="muted">
-          VaultLab is collecting a labeled dataset for a future make/miss prediction model.
+          Pose AI extracts vault variables, logistic regression predicts make probability, and the app translates the model into coaching scores.
         </p>
       </div>
       <div className="research-grid">
         <Metric label="Saved attempts" value={String(props.attempts.length)} />
-        <Metric label="Model-ready rows" value={String(completeRows.length)} />
+        <Metric label="Training rows" value={String(completeRows.length)} />
         <Metric label="Make rate" value={makeRate === null ? "--" : `${makeRate}%`} />
-        <Metric label="Prediction target" value="make / miss" />
+        <Metric label="Current make probability" value={props.prediction.probability === null ? "--" : `${Math.round(props.prediction.probability * 100)}%`} />
       </div>
       <div className="research-note">
-        <strong>{modelStatus}</strong>
+        <strong>{props.model.status}</strong>
         <span>
-          Planned features: approach speed, grip over bar, flight time, takeoff angle, and inversion angle.
+          Model inputs: approach speed, grip over bar, flight time, takeoff angle, and inversion angle. Target label: make or miss.
         </span>
       </div>
     </section>
+  );
+}
+
+function ModelScorePanel(props: { prediction: VaultPrediction }) {
+  return (
+    <div className="model-panel">
+      <div>
+        <h3>Logistic model score</h3>
+        <p className="muted">{props.prediction.message}</p>
+      </div>
+      {props.prediction.features.length ? (
+        <div className="factor-list">
+          {props.prediction.features.map((feature) => (
+            <div className="factor-row" key={feature.key}>
+              <div>
+                <strong>{feature.label}</strong>
+                <span>
+                  {feature.value.toFixed(feature.unit === "deg" ? 0 : 2)} {feature.unit}
+                </span>
+              </div>
+              <span className={`factor-effect ${feature.effect}`}>
+                {feature.effect === "neutral" ? "neutral" : feature.effect === "helps" ? "helps make" : "hurts make"}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="empty">Train the model with saved make/miss attempts, then complete the current vault fields to see variable-by-variable scoring.</p>
+      )}
+    </div>
   );
 }
 
