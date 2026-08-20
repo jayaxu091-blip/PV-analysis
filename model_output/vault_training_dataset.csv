@@ -1,0 +1,24 @@
+file,bar_height_m,result
+"10 feet 9 inches, miss.mp4",3.2766,miss
+"10 feet, miss.mp4",3.0480,miss
+"11 feet 1 inch, miss.mp4",3.3528,miss
+"11 feet 3 inches, make.mp4",3.4290,make
+"11 feet 6 inches, make.mp4",3.5052,make
+"11 feet 6 inches, miss.mp4",3.5052,miss
+"11 feet, make.mp4",3.3528,make
+"12 feet 10 inches, make.mp4",3.9116,make
+"12 feet 10.25 inches, make.mp4",3.9179,make
+"14 feet 8.75 inches, make.mp4",4.4894,make
+"15 feet, make.mp4",4.5720,make
+"16 feet 8 inches, miss.mp4",5.0800,miss
+"16 feet 9 inches, miss.mp4",5.1054,miss
+"18 feet, miss.mp4",5.4864,miss
+"2.00 meters, make.mp4",2.0000,make
+"3.30 meters, make.mp4",3.3000,make
+"5.20 meters, make.mp4",5.2000,make
+"6 feet, miss.mp4",1.8288,miss
+"7 feet 6 inches, miss.mp4",2.2860,miss
+"7 feet, make.mp4",2.1336,make
+"9 feet 2.25 inches, make.mp4",2.8004,make
+"9 feet 6 inches, make.mp4",2.8956,make
+"9 feet, make.mp4",2.7432,make

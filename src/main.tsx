@@ -878,18 +878,30 @@ function ResearchPanel(props: { attempts: Attempt[]; model: TrainedVaultModel; p
       </div>
       <div className="research-grid">
         <Metric label="Saved attempts" value={String(props.attempts.length)} />
-        <Metric label="Training rows" value={String(completeRows.length)} />
+        <Metric label={props.model.source === "general" ? "General model rows" : "Training rows"} value={String(props.model.rows)} />
         <Metric label="Make rate" value={makeRate === null ? "--" : `${makeRate}%`} />
         <Metric label="Current make probability" value={props.prediction.probability === null ? "--" : `${Math.round(props.prediction.probability * 100)}%`} />
       </div>
       <div className="research-note">
         <strong>{props.model.status}</strong>
         <span>
-          Model inputs: approach speed, grip over bar, flight time, takeoff angle, and inversion angle. Target label: make or miss.
+          Model inputs: {props.model.features.map((feature) => readFeatureLabel(feature)).join(", ")}. Target label: make or miss.
         </span>
       </div>
     </section>
   );
+}
+
+function readFeatureLabel(feature: string) {
+  const labels: Record<string, string> = {
+    barHeight: "bar height",
+    speed: "approach speed",
+    takeoffAngle: "takeoff angle",
+    inversionAngle: "inversion angle",
+    gripOverBar: "grip over bar",
+    flightTime: "flight time",
+  };
+  return labels[feature] || feature;
 }
 
 function ModelScorePanel(props: { prediction: VaultPrediction }) {

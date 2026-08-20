@@ -1,0 +1,38 @@
+VaultLab pose-feature logistic model
+Training rows: 23
+Makes: 14
+Misses: 9
+Features used: bar_height_m, takeoff_angle_deg, inversion_angle_deg, flight_time_s
+Coefficients:
+- bar_height_m: -0.1210
+- takeoff_angle_deg: 0.2858
+- inversion_angle_deg: 0.0178
+- flight_time_s: -0.0884
+Training accuracy: 60.9%
+Leave-one-out accuracy: 39.1%
+Holdout accuracy: 50.0% (6 test rows)
+
+Predictions:
+- 10 feet 9 inches, miss.mp4: actual miss, predicted make, make probability 58.9%
+- 10 feet, miss.mp4: actual miss, predicted make, make probability 69.7%
+- 11 feet 1 inch, miss.mp4: actual miss, predicted make, make probability 65.5%
+- 11 feet 3 inches, make.mp4: actual make, predicted make, make probability 71.0%
+- 11 feet 6 inches, make.mp4: actual make, predicted make, make probability 64.5%
+- 11 feet 6 inches, miss.mp4: actual miss, predicted make, make probability 56.2%
+- 11 feet, make.mp4: actual make, predicted make, make probability 56.2%
+- 12 feet 10 inches, make.mp4: actual make, predicted miss, make probability 49.8%
+- 12 feet 10.25 inches, make.mp4: actual make, predicted make, make probability 55.4%
+- 14 feet 8.75 inches, make.mp4: actual make, predicted make, make probability 56.5%
+- 15 feet, make.mp4: actual make, predicted make, make probability 56.2%
+- 16 feet 8 inches, miss.mp4: actual miss, predicted make, make probability 52.4%
+- 16 feet 9 inches, miss.mp4: actual miss, predicted miss, make probability 47.8%
+- 18 feet, miss.mp4: actual miss, predicted make, make probability 61.9%
+- 2.00 meters, make.mp4: actual make, predicted make, make probability 67.3%
+- 3.30 meters, make.mp4: actual make, predicted make, make probability 70.8%
+- 5.20 meters, make.mp4: actual make, predicted make, make probability 52.8%
+- 6 feet, miss.mp4: actual miss, predicted make, make probability 59.3%
+- 7 feet 6 inches, miss.mp4: actual miss, predicted make, make probability 59.2%
+- 7 feet, make.mp4: actual make, predicted make, make probability 68.9%
+- 9 feet 2.25 inches, make.mp4: actual make, predicted make, make probability 53.7%
+- 9 feet 6 inches, make.mp4: actual make, predicted make, make probability 74.0%
+- 9 feet, make.mp4: actual make, predicted make, make probability 72.0%

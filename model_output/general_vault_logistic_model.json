@@ -1,0 +1,26 @@
+{
+  "model_type": "logistic_regression",
+  "target": "make_probability",
+  "features": [
+    "bar_height_m"
+  ],
+  "mean": {
+    "bar_height_m": 3.531302173913044
+  },
+  "scale": {
+    "bar_height_m": 1.032371744374201
+  },
+  "intercept": 0.44574761266872004,
+  "coefficients": {
+    "bar_height_m": -0.19381408079315265
+  },
+  "training_rows": 23,
+  "makes": 14,
+  "misses": 9,
+  "training_accuracy": 0.6086956521739131,
+  "holdout_evaluation": {
+    "train_rows": 17,
+    "test_rows": 6,
+    "test_accuracy": 0.5
+  }
+}

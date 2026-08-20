@@ -25,3 +25,4 @@ deck_render/
 paper_render/
 paper_pdf_render/
 submission_build/node_modules/
+dataset_preview/

@@ -1,0 +1,33 @@
+VaultLab general logistic model
+Training rows: 23
+Makes: 14
+Misses: 9
+Features used: bar_height_m
+Coefficient for bar_height_m: -0.1938
+Training accuracy: 60.9%
+Holdout accuracy: 50.0% (6 test rows)
+
+Predictions:
+- 10 feet 9 inches, miss.mp4: actual miss, predicted make, make probability 62.1%
+- 10 feet, miss.mp4: actual miss, predicted make, make probability 63.1%
+- 11 feet 1 inch, miss.mp4: actual miss, predicted make, make probability 61.8%
+- 11 feet 3 inches, make.mp4: actual make, predicted make, make probability 61.4%
+- 11 feet 6 inches, make.mp4: actual make, predicted make, make probability 61.1%
+- 11 feet 6 inches, miss.mp4: actual miss, predicted make, make probability 61.1%
+- 11 feet, make.mp4: actual make, predicted make, make probability 61.8%
+- 12 feet 10 inches, make.mp4: actual make, predicted make, make probability 59.3%
+- 12 feet 10.25 inches, make.mp4: actual make, predicted make, make probability 59.2%
+- 14 feet 8.75 inches, make.mp4: actual make, predicted make, make probability 56.6%
+- 15 feet, make.mp4: actual make, predicted make, make probability 56.2%
+- 16 feet 8 inches, miss.mp4: actual miss, predicted make, make probability 53.9%
+- 16 feet 9 inches, miss.mp4: actual miss, predicted make, make probability 53.7%
+- 18 feet, miss.mp4: actual miss, predicted make, make probability 52.0%
+- 2.00 meters, make.mp4: actual make, predicted make, make probability 67.6%
+- 3.30 meters, make.mp4: actual make, predicted make, make probability 62.0%
+- 5.20 meters, make.mp4: actual make, predicted make, make probability 53.3%
+- 6 feet, miss.mp4: actual miss, predicted make, make probability 68.3%
+- 7 feet 6 inches, miss.mp4: actual miss, predicted make, make probability 66.4%
+- 7 feet, make.mp4: actual make, predicted make, make probability 67.0%
+- 9 feet 2.25 inches, make.mp4: actual make, predicted make, make probability 64.2%
+- 9 feet 6 inches, make.mp4: actual make, predicted make, make probability 63.8%
+- 9 feet, make.mp4: actual make, predicted make, make probability 64.4%
