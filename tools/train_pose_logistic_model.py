@@ -10,6 +10,7 @@ import random
 IN_CSV = pathlib.Path("model_output/vault_pose_extracted_dataset.csv")
 OUT_DIR = pathlib.Path("model_output")
 MODEL_JSON = OUT_DIR / "general_pose_vault_logistic_model.json"
+BALANCED_MODEL_JSON = OUT_DIR / "balanced_pose_vault_logistic_model.json"
 REPORT_TXT = OUT_DIR / "pose_training_report.txt"
 
 FEATURES = [
@@ -136,15 +137,37 @@ def holdout(rows: list[dict]) -> dict | None:
     }
 
 
+def balanced_rows(rows: list[dict]) -> list[dict]:
+    makes = sorted((row for row in rows if row["result"] == 1), key=lambda row: row["file"])
+    misses = sorted((row for row in rows if row["result"] == 0), key=lambda row: row["file"])
+    size = min(len(makes), len(misses))
+
+    def spread(items: list[dict]) -> list[dict]:
+        if len(items) == size:
+            return items
+        if size == 1:
+            return [items[0]]
+        picked = []
+        for index in range(size):
+            source_index = round(index * (len(items) - 1) / (size - 1))
+            picked.append(items[source_index])
+        return picked
+
+    return sorted([*spread(makes), *spread(misses)], key=lambda row: row["file"])
+
+
 def main() -> None:
     rows = load_rows()
     if len(rows) < 8 or len({row["result"] for row in rows}) < 2:
         raise SystemExit("Need at least 8 extracted rows with both makes and misses.")
 
-    model = train(rows)
-    train_accuracy = accuracy(rows, model)
-    loocv_accuracy = leave_one_out(rows)
-    holdout_eval = holdout(rows)
+    selected_rows = balanced_rows(rows)
+    model = train(selected_rows)
+    all_model = train(rows)
+    train_accuracy = accuracy(selected_rows, model)
+    full_dataset_accuracy = accuracy(rows, model)
+    loocv_accuracy = leave_one_out(selected_rows)
+    holdout_eval = holdout(selected_rows)
 
     predictions = []
     for row in rows:
@@ -161,14 +184,21 @@ def main() -> None:
     payload = {
         **model,
         "training_accuracy": train_accuracy,
+        "full_dataset_accuracy": full_dataset_accuracy,
         "leave_one_out_accuracy": loocv_accuracy,
         "holdout_evaluation": holdout_eval,
+        "selection": "balanced",
+        "available_rows": len(rows),
+        "available_makes": sum(row["result"] for row in rows),
+        "available_misses": len(rows) - sum(row["result"] for row in rows),
     }
     MODEL_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    BALANCED_MODEL_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     lines = [
         "VaultLab pose-feature logistic model",
-        f"Training rows: {model['training_rows']}",
+        f"Available rows: {len(rows)}",
+        f"Balanced training rows: {model['training_rows']}",
         f"Makes: {model['makes']}",
         f"Misses: {model['misses']}",
         f"Features used: {', '.join(FEATURES)}",
@@ -179,7 +209,9 @@ def main() -> None:
     lines.extend(
         [
             f"Training accuracy: {train_accuracy:.1%}",
+            f"Accuracy on all extracted rows: {full_dataset_accuracy:.1%}",
             f"Leave-one-out accuracy: {loocv_accuracy:.1%}",
+            f"All-row model training accuracy: {accuracy(rows, all_model):.1%}",
         ]
     )
     if holdout_eval:

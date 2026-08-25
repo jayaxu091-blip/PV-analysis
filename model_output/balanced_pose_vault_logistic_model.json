@@ -1,0 +1,44 @@
+{
+  "model_type": "logistic_regression",
+  "target": "make_probability",
+  "features": [
+    "bar_height_m",
+    "takeoff_angle_deg",
+    "inversion_angle_deg",
+    "flight_time_s"
+  ],
+  "mean": {
+    "bar_height_m": 3.850866666666667,
+    "takeoff_angle_deg": 66.8493289078798,
+    "inversion_angle_deg": 124.85754813688156,
+    "flight_time_s": 2.2518941387314184
+  },
+  "scale": {
+    "bar_height_m": 1.061682411578696,
+    "takeoff_angle_deg": 45.01045047386033,
+    "inversion_angle_deg": 48.76521626661363,
+    "flight_time_s": 1.4328408700813988
+  },
+  "intercept": -0.0016733437227014582,
+  "coefficients": {
+    "bar_height_m": -0.3182411136983498,
+    "takeoff_angle_deg": -0.04341436748346155,
+    "inversion_angle_deg": -0.1410757359564984,
+    "flight_time_s": -0.25305341126748027
+  },
+  "training_rows": 30,
+  "makes": 15,
+  "misses": 15,
+  "training_accuracy": 0.6666666666666666,
+  "full_dataset_accuracy": 0.6285714285714286,
+  "leave_one_out_accuracy": 0.43333333333333335,
+  "holdout_evaluation": {
+    "train_rows": 22,
+    "test_rows": 8,
+    "test_accuracy": 0.25
+  },
+  "selection": "balanced",
+  "available_rows": 35,
+  "available_makes": 20,
+  "available_misses": 15
+}

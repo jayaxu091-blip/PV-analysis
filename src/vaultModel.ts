@@ -49,29 +49,23 @@ const featureLabels: Record<VaultFeatureKey, { label: string; unit: string }> = 
 export const generalVaultModel: TrainedVaultModel = {
   ready: true,
   source: "general",
-  status: "Using general logistic model trained from 23 labeled vault videos.",
-  rows: 23,
-  makes: 14,
-  misses: 9,
-  features: ["barHeight", "takeoffAngle", "inversionAngle", "flightTime"],
-  intercept: 0.453923313478026,
+  status: "Using general logistic model trained from 35 labeled vault videos.",
+  rows: 35,
+  makes: 20,
+  misses: 15,
+  features: ["barHeight", "takeoffAngle"],
+  intercept: 0.2992116250226063,
   means: {
-    barHeight: 3.531302173913044,
-    takeoffAngle: 62.40312016465645,
-    inversionAngle: 124.34846687832587,
-    flightTime: 2.119384234744864,
+    barHeight: 3.775484285714286,
+    takeoffAngle: 66.04227597724004,
   },
   scales: {
-    barHeight: 1.032371744374201,
-    takeoffAngle: 56.22361473687233,
-    inversionAngle: 48.49257882841472,
-    flightTime: 1.3751059137248882,
+    barHeight: 1.0063908783208177,
+    takeoffAngle: 47.476047419881326,
   },
   coefficients: {
-    barHeight: -0.1210115641021436,
-    takeoffAngle: 0.2858310285501893,
-    inversionAngle: 0.017788463312122756,
-    flightTime: -0.08838070433792725,
+    barHeight: -0.4023570906590552,
+    takeoffAngle: -0.07041287579294384,
   },
 };
 
@@ -119,17 +113,17 @@ export function formVector(form: AttemptForm, metrics: Metrics): Partial<Record<
   const takeoffAngle = parseNumber(form.takeoffAngle);
   const inversionAngle = parseNumber(form.inversionAngle);
 
-  if (barHeight === null || takeoffAngle === null || inversionAngle === null || metrics.flightTime === null) {
+  if (barHeight === null && takeoffAngle === null && inversionAngle === null && metrics.flightTime === null) {
     return null;
   }
 
   return {
-    barHeight,
+    barHeight: barHeight ?? undefined,
     speed: metrics.speed ?? undefined,
-    takeoffAngle,
-    inversionAngle,
+    takeoffAngle: takeoffAngle ?? undefined,
+    inversionAngle: inversionAngle ?? undefined,
     gripOverBar: metrics.gripOverBar ?? undefined,
-    flightTime: metrics.flightTime,
+    flightTime: metrics.flightTime ?? undefined,
   };
 }
 
