@@ -78,8 +78,8 @@ export function getMetrics(form: AttemptForm): Metrics {
     speed,
     gripOverBar: gripMeters !== null && barMeters !== null ? gripMeters - barMeters : null,
     flightTime:
-      takeoffTime !== null && clearanceTime !== null && clearanceTime > takeoffTime
-        ? clearanceTime - takeoffTime
+      takeoffTime !== null && clearanceTime !== null
+        ? Math.max(0, clearanceTime - takeoffTime)
         : null,
     techScore,
   };
@@ -117,23 +117,15 @@ export function buildCoachFeedback(form: AttemptForm, metrics: Metrics) {
   }
 
   if (takeoff === null) {
-    feedback.push("Analyze the full video so the app can estimate body angle at takeoff.");
-  } else if (takeoff < 16) {
-    feedback.push("Takeoff angle is estimated low. Check posture at takeoff and whether you are getting pulled into the pole too early.");
-  } else if (takeoff > 28) {
-    feedback.push("Takeoff angle is estimated high. Check if you are jumping up too much and losing runway speed into the pole.");
+    feedback.push("Analyze the full video to estimate body position at takeoff.");
   } else {
-    feedback.push("Takeoff angle is in a workable range. Next compare takeoff position and swing timing.");
+    feedback.push("Review posture in the estimated takeoff frame with your coach. This body angle is not a launch angle or a validated technique target.");
   }
 
   if (inversion === null) {
-    feedback.push("Analyze max inversion so the app can estimate whether hips and feet rise efficiently.");
-  } else if (inversion < 125) {
-    feedback.push("Inversion angle is estimated low. Prioritize a longer swing and getting hips above shoulders.");
-  } else if (inversion < 155) {
-    feedback.push("Inversion is improving, but there may still be room to finish the swing and cover the pole.");
+    feedback.push("Analyze the video to review body alignment near inversion.");
   } else {
-    feedback.push("Inversion looks strong. Look next at clearance timing and whether you are using the height efficiently.");
+    feedback.push("Check the inversion frame for hip and foot position. A straighter body angle alone does not establish better technique.");
   }
 
   if (metrics.gripOverBar !== null && barMeters !== null) {
@@ -145,7 +137,7 @@ export function buildCoachFeedback(form: AttemptForm, metrics: Metrics) {
   }
 
   if (metrics.flightTime !== null) {
-    feedback.push("Phase timing is saved. Compare takeoff-to-clearance timing across makes and misses in the trained model.");
+    feedback.push("Compare takeoff-to-clearance timing across attempts filmed from similar views. Both endpoints are estimates.");
   }
 
   return feedback.slice(0, 5);

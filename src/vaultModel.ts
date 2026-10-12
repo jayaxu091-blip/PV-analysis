@@ -1,5 +1,6 @@
 import type { Attempt, AttemptForm, Metrics } from "./types";
 import { getBarMeters, parseNumber } from "./utils";
+import { MEASUREMENT_VERSION } from "./studyMeasurements";
 
 export type VaultFeatureKey = "barHeight" | "speed" | "takeoffAngle" | "inversionAngle" | "gripOverBar" | "flightTime";
 
@@ -15,6 +16,7 @@ export type VaultModelFeature = {
 };
 
 export type TrainedVaultModel = {
+  measurementVersion: string;
   ready: boolean;
   source: "general" | "personal" | "waiting";
   status: string;
@@ -30,7 +32,6 @@ export type TrainedVaultModel = {
 
 export type VaultPrediction = {
   probability: number | null;
-  score: number | null;
   features: VaultModelFeature[];
   message: string;
 };
@@ -40,32 +41,39 @@ const personalFeatureOrder: VaultFeatureKey[] = ["speed", "takeoffAngle", "inver
 const featureLabels: Record<VaultFeatureKey, { label: string; unit: string }> = {
   barHeight: { label: "Bar height", unit: "m" },
   speed: { label: "Approach speed", unit: "m/s" },
-  takeoffAngle: { label: "Takeoff angle", unit: "deg" },
-  inversionAngle: { label: "Inversion angle", unit: "deg" },
+  takeoffAngle: { label: "Takeoff body-line proxy", unit: "deg" },
+  inversionAngle: { label: "Inversion alignment proxy", unit: "deg" },
   gripOverBar: { label: "Grip over bar", unit: "m" },
-  flightTime: { label: "Flight time", unit: "s" },
+  flightTime: { label: "Takeoff-to-clearance interval", unit: "s" },
 };
 
 export const generalVaultModel: TrainedVaultModel = {
+  measurementVersion: MEASUREMENT_VERSION,
   ready: true,
   source: "general",
-  status: "Using general logistic model trained from 35 labeled vault videos.",
-  rows: 35,
-  makes: 20,
+  status: "Original 30-video study model. Measurements use the study's proxy definitions. Predictive accuracy on new athletes is not established.",
+  rows: 30,
+  makes: 15,
   misses: 15,
-  features: ["barHeight", "takeoffAngle"],
-  intercept: 0.2992116250226063,
+  features: ["barHeight", "takeoffAngle", "inversionAngle", "flightTime"],
+  intercept: -0.0016733437227014582,
   means: {
-    barHeight: 3.775484285714286,
-    takeoffAngle: 66.04227597724004,
+    barHeight: 3.850866666666667,
+    takeoffAngle: 66.8493289078798,
+    inversionAngle: 124.85754813688156,
+    flightTime: 2.2518941387314184,
   },
   scales: {
-    barHeight: 1.0063908783208177,
-    takeoffAngle: 47.476047419881326,
+    barHeight: 1.061682411578696,
+    takeoffAngle: 45.01045047386033,
+    inversionAngle: 48.76521626661363,
+    flightTime: 1.4328408700813988,
   },
   coefficients: {
-    barHeight: -0.4023570906590552,
-    takeoffAngle: -0.07041287579294384,
+    barHeight: -0.3182411136983498,
+    takeoffAngle: -0.04341436748346155,
+    inversionAngle: -0.1410757359564984,
+    flightTime: -0.25305341126748027,
   },
 };
 
@@ -79,6 +87,7 @@ function sigmoid(value: number) {
 }
 
 function attemptVector(attempt: Attempt): Record<VaultFeatureKey, number> | null {
+  if (attempt.measurementVersion !== MEASUREMENT_VERSION) return null;
   if (attempt.speed === null || attempt.takeoffAngle === null || attempt.inversionAngle === null) return null;
   const barMeters = attempt.unit === "ft" ? attempt.barHeight * 0.3048 : attempt.barHeight;
   const gripMeters =
@@ -109,6 +118,7 @@ function attemptVector(attempt: Attempt): Record<VaultFeatureKey, number> | null
 }
 
 export function formVector(form: AttemptForm, metrics: Metrics): Partial<Record<VaultFeatureKey, number>> | null {
+  if (form.measurementVersion !== MEASUREMENT_VERSION) return null;
   const barHeight = getBarMeters(form);
   const takeoffAngle = parseNumber(form.takeoffAngle);
   const inversionAngle = parseNumber(form.inversionAngle);
@@ -128,6 +138,13 @@ export function formVector(form: AttemptForm, metrics: Metrics): Partial<Record<
 }
 
 export function trainVaultModel(attempts: Attempt[]): TrainedVaultModel {
+  // The submission release always uses the reported study model, regardless of log size.
+  void attempts;
+  return generalVaultModel;
+}
+
+export function trainPersonalVaultModel(attempts: Attempt[]): TrainedVaultModel {
+  if (!generalVaultModel.ready) return generalVaultModel;
   const rows = attempts
     .map((attempt) => {
       const vector = attemptVector(attempt);
@@ -179,6 +196,7 @@ export function trainVaultModel(attempts: Attempt[]): TrainedVaultModel {
 
   return {
     ready: true,
+    measurementVersion: MEASUREMENT_VERSION,
     source: "personal",
     status: "Using personalized logistic model trained from your saved vault attempts.",
     rows: rows.length,
@@ -196,10 +214,12 @@ export function trainVaultModel(attempts: Attempt[]): TrainedVaultModel {
 }
 
 export function predictVault(model: TrainedVaultModel, vector: Partial<Record<VaultFeatureKey, number>> | null): VaultPrediction {
+  if (model.measurementVersion !== MEASUREMENT_VERSION) {
+    return { probability: null, features: [], message: "Measurement version mismatch. Reanalyze using the study measurement rules." };
+  }
   if (!model.ready) {
     return {
       probability: null,
-      score: null,
       features: [],
       message: model.status,
     };
@@ -208,9 +228,8 @@ export function predictVault(model: TrainedVaultModel, vector: Partial<Record<Va
   if (!vector) {
     return {
       probability: null,
-      score: null,
       features: [],
-      message: "Enter bar height and run full-video analysis to score this vault.",
+      message: "Enter bar height and run full-video analysis to predict this vault.",
     };
   }
 
@@ -218,7 +237,6 @@ export function predictVault(model: TrainedVaultModel, vector: Partial<Record<Va
   if (missing.length) {
     return {
       probability: null,
-      score: null,
       features: [],
       message: `Missing model input: ${missing.map((key) => featureLabels[key].label).join(", ")}.`,
     };
@@ -247,11 +265,10 @@ export function predictVault(model: TrainedVaultModel, vector: Partial<Record<Va
   const probability = sigmoid(logit);
   return {
     probability,
-    score: Math.round(probability * 100),
     features: features.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)),
     message:
       model.source === "personal"
-        ? "Score is produced by your personalized logistic model."
-        : "Score is produced by the built-in general logistic model trained from the current video dataset.",
+        ? "Probability is produced by your personalized logistic regression model."
+        : "Probability is produced by the built-in logistic regression model trained from the current video dataset.",
   };
 }

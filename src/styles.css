@@ -9,6 +9,7 @@
   --gold: #d99d25;
   --red: #b93838;
   --blue: #2563eb;
+  --green: #0f766e;
 }
 
 * {
@@ -120,6 +121,63 @@ main {
   padding: 24px 20px 40px;
 }
 
+.competition-update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #255048;
+  border-radius: 8px;
+  background: #10231f;
+  color: white;
+}
+
+.competition-update.compact {
+  margin: 0 0 18px;
+}
+
+.competition-update h2 {
+  margin-bottom: 6px;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.competition-update p {
+  margin: 0;
+  max-width: 680px;
+  color: #d7eee8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.update-kicker,
+.update-date span {
+  color: #9fd8cf;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.update-date {
+  flex: 0 0 auto;
+  min-width: 170px;
+  padding: 12px 14px;
+  border: 1px solid rgba(159, 216, 207, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.update-date strong {
+  display: block;
+  margin: 2px 0;
+  color: white;
+  font-size: 28px;
+  line-height: 1;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
@@ -161,17 +219,21 @@ section {
   place-items: center;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .pose-canvas {
-  position: fixed;
+  position: absolute;
   pointer-events: none;
   z-index: 3;
 }
 
 video {
-  width: auto;
-  height: auto;
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -179,6 +241,7 @@ video {
 }
 
 video:fullscreen {
+  position: static;
   width: 100vw;
   height: 100vh;
   max-width: 100vw;
@@ -280,7 +343,7 @@ textarea {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 14px;
 }
@@ -372,13 +435,13 @@ th {
 
 .phase-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-top: 14px;
 }
 
 .phase-card {
-  min-height: 128px;
+  min-height: 96px;
 }
 
 .phase-card strong {
@@ -395,11 +458,44 @@ th {
   margin-bottom: 10px;
 }
 
-.phase-card button {
-  width: 100%;
-  min-height: 38px;
-  padding: 8px 10px;
-  font-size: 14px;
+.measurement-details {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.measurement-details summary {
+  cursor: pointer;
+}
+
+.measurement-details p {
+  margin: 8px 0;
+}
+
+.auto-measurement small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: normal;
+}
+
+.auto-measurement input[readonly] {
+  background: #f2f6f5;
+}
+
+.prediction-panel .research-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.model-panel > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.model-panel[open] > summary {
+  margin-bottom: 10px;
 }
 
 .coach-panel {
@@ -445,6 +541,7 @@ th {
 
 .factor-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -465,11 +562,17 @@ th {
 }
 
 .factor-effect {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
   padding: 5px 9px;
   border-radius: 999px;
   font-weight: 700;
   font-size: 12px;
+}
+
+details.model-panel {
+  display: block;
 }
 
 .factor-effect.helps {
@@ -501,7 +604,8 @@ th {
   border-radius: 8px;
 }
 
-.research-panel {
+.research-panel,
+.prediction-panel {
   display: grid;
   gap: 14px;
 }
@@ -595,6 +699,15 @@ th {
     flex-direction: column;
   }
 
+  .competition-update {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .update-date {
+    width: 100%;
+  }
+
   .status {
     justify-content: flex-start;
   }
@@ -618,7 +731,8 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .research-grid {
+  .research-grid,
+  .prediction-panel .research-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -9,10 +9,9 @@ import {
   type User,
 } from "firebase/auth";
 import "./styles.css";
-import type { Attempt, AttemptForm, Landmark, PhaseStatus, PoseReadout } from "./types";
+import type { Attempt, AttemptForm, FrameAnalysis, Landmark, PhaseStatus, PoseReadout } from "./types";
 import {
   appendNoteOnce,
-  buildCoachFeedback,
   createId,
   emptyForm,
   escapeCsv,
@@ -28,24 +27,30 @@ import {
   buildPoseReadout,
   estimateVaultPhases,
   isVisible,
-  resetPoseClock,
   seekVideo,
 } from "./poseAnalysis";
 import { formVector, predictVault, trainVaultModel, type TrainedVaultModel, type VaultPrediction } from "./vaultModel";
+import { nearestPoseFrame } from "./poseMeasurements";
+import { MEASUREMENT_VERSION } from "./studyMeasurements";
+import { displayNumber, readPhaseTime } from "./presentation";
+import { estimateApproach } from "./approachAnalysis";
+import { buildAthleteFeedback, predictionEffect } from "./athleteFeedback";
 
 const emptyPoseReadout: PoseReadout = {
   status: "Pose AI has not analyzed this video yet.",
   jointCount: "--",
   bodyLineAngle: "--",
+  torsoOrientation: "--",
   leftKneeAngle: "--",
   rightKneeAngle: "--",
   inversionClue: "--",
 };
 
 const emptyPhaseStatus: PhaseStatus = {
-  takeoff: "Not marked yet. Pause where the takeoff foot leaves the ground.",
-  inversion: "Not marked yet. Pause where the hips/feet are highest.",
-  clearance: "Not marked yet. Pause where the body clears the bar.",
+  approach: "Not analyzed.",
+  takeoff: "Not analyzed yet.",
+  inversion: "Not analyzed.",
+  clearance: "Not analyzed yet.",
 };
 
 type ActiveUser = {
@@ -79,6 +84,7 @@ function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const poseAnimationRef = useRef<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -91,7 +97,8 @@ function App() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [poseReadout, setPoseReadout] = useState<PoseReadout>(emptyPoseReadout);
   const [phaseStatus, setPhaseStatus] = useState<PhaseStatus>(emptyPhaseStatus);
-  const [poseLandmarks, setPoseLandmarks] = useState<Landmark[] | null>(null);
+  const [poseTimeline, setPoseTimeline] = useState<FrameAnalysis[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
   const activeUser: ActiveUser | null = user ? toActiveUser(user) : demoMode ? { key: "competition-demo", label: "Demo mode", isDemo: true } : null;
 
   useEffect(() => {
@@ -111,7 +118,8 @@ function App() {
   }, [activeUser?.key]);
 
   const metrics = useMemo(() => getMetrics(form), [form]);
-  const coachFeedback = useMemo(() => buildCoachFeedback(form, metrics), [form, metrics]);
+  const reviewPhases = useMemo(() => poseTimeline.length >= 3 ? estimateVaultPhases(poseTimeline) : null, [poseTimeline]);
+  const coachFeedback = useMemo(() => buildAthleteFeedback(reviewPhases?.inversion ?? null, form.approachEstimate), [reviewPhases, form.approachEstimate]);
   const vaultModel = useMemo(() => trainVaultModel(attempts), [attempts]);
   const vaultPrediction = useMemo(() => predictVault(vaultModel, formVector(form, metrics)), [vaultModel, form, metrics]);
   const bestMake = useMemo(() => {
@@ -125,7 +133,18 @@ function App() {
   }, [attempts]);
 
   function updateField<K extends keyof AttemptForm>(key: K, value: AttemptForm[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => {
+      if (key === "takeoffTime" && current.approachEstimate && value !== current.takeoffTime) {
+        return { ...current, [key]: value, approachTime: "", approachEstimate: {
+          ...current.approachEstimate, start: null, end: null, duration: null, sampleGap: null,
+          message: "Takeoff timing was edited. Reanalyze the video to estimate run-up time again.",
+        } };
+      }
+      return { ...current, [key]: value };
+    });
+    if (key === "takeoffTime" && value !== form.takeoffTime && form.approachEstimate) {
+      setPhaseStatus(current => ({ ...current, approach: "Timing edited. Reanalyze for a new run-up estimate." }));
+    }
   }
 
   function persistAttempts(next: Attempt[]) {
@@ -135,11 +154,11 @@ function App() {
   }
 
   function resetPoseState() {
+    cancelPoseAnimation();
     clearPoseCanvas();
-    resetPoseClock();
     setPoseReadout(emptyPoseReadout);
     setPhaseStatus(emptyPhaseStatus);
-    setPoseLandmarks(null);
+    setPoseTimeline([]);
   }
 
   function handleVideoUpload(file: File | null) {
@@ -152,13 +171,15 @@ function App() {
     setVideoUrl(nextUrl);
     setVideoLoaded(true);
     resetPoseState();
+    setForm(current => ({ ...current, measurementVersion: undefined, torsoOrientation: "", approachTime: "", approachEstimate: undefined,
+      takeoffAngle: "", inversionAngle: "", takeoffTime: "", clearanceTime: "" }));
   }
 
   function handleLoadedMetadata() {
     const video = videoRef.current;
     if (!video) return;
     setIsPortrait(video.videoHeight > video.videoWidth);
-    drawPose(poseLandmarks);
+    drawCurrentPose();
   }
 
   function startNewAttempt() {
@@ -184,6 +205,7 @@ function App() {
   }
 
   async function analyzeFullVideo() {
+    if (analyzing) return;
     const video = videoRef.current;
     if (!video || !videoLoaded || !video.videoWidth || !video.videoHeight || !Number.isFinite(video.duration)) {
       alert("Upload and load a video first.");
@@ -191,7 +213,10 @@ function App() {
     }
 
     const originalTime = video.currentTime;
-    const wasPaused = video.paused;
+    setAnalyzing(true);
+    resetPoseState();
+    setForm(current => ({ ...current, measurementVersion: undefined, torsoOrientation: "", approachTime: "", approachEstimate: undefined,
+      takeoffAngle: "", inversionAngle: "", takeoffTime: "", clearanceTime: "" }));
 
     try {
       video.pause();
@@ -208,74 +233,47 @@ function App() {
       }
 
       const phases = estimateVaultPhases(frames);
-      const nextForm = {
-        ...form,
-        takeoffTime: phases.takeoff.time.toFixed(2),
-        clearanceTime: phases.clearance.time.toFixed(2),
-        takeoffAngle: Number.isFinite(phases.takeoff.bodyLine) ? String(Math.round(phases.takeoff.bodyLine || 0)) : form.takeoffAngle,
-        inversionAngle: Number.isFinite(phases.inversion.inversionAngle)
-          ? String(Math.round(phases.inversion.inversionAngle || 0))
-          : form.inversionAngle,
+      const approach = estimateApproach(frames, phases.takeoff, video.videoWidth / video.videoHeight);
+      setPoseTimeline(frames);
+      const format = (value: number | null | undefined) => value == null ? "" : String(value);
+      const timeLabel = (frame: FrameAnalysis | null) => frame ? `${frame.time.toFixed(2)}s` : "not detected";
+      setForm(current => ({
+        ...current,
+        measurementVersion: MEASUREMENT_VERSION,
+        approachEstimate: approach,
+        approachTime: format(approach.duration),
+        takeoffTime: format(phases.takeoff?.time),
+        clearanceTime: format(phases.clearance?.time),
+        takeoffAngle: format(phases.takeoff?.bodyLine),
+        inversionAngle: format(phases.inversion?.inversionAngle),
+        torsoOrientation: format(phases.inversion?.torsoOrientation),
         notes: appendNoteOnce(
-          form.notes,
-          `Auto analysis: takeoff ${phases.takeoff.time.toFixed(2)}s, max inversion ${phases.inversion.time.toFixed(2)}s, clearance ${phases.clearance.time.toFixed(2)}s.`,
+          current.notes,
+          `Auto analysis: estimated takeoff ${timeLabel(phases.takeoff)}, max inversion ${timeLabel(phases.inversion)}, clearance ${timeLabel(phases.clearance)}. Takeoff angle ${nextValue(phases.takeoff?.bodyLine)}; inversion angle ${nextValue(phases.inversion?.inversionAngle)}. ${approach.duration !== null ? `Estimated run-up time ${approach.duration.toFixed(2)}s.` : `Run-up time unavailable: ${approach.message}`}`,
         ),
-      };
-
-      setForm(nextForm);
+      }));
       setPhaseStatus({
-        takeoff: `Auto-estimated at ${phases.takeoff.time.toFixed(2)}s. Check this frame for takeoff accuracy.`,
-        inversion: `Auto-estimated at ${phases.inversion.time.toFixed(2)}s. This is the strongest inversion candidate.`,
-        clearance: `Auto-estimated at ${phases.clearance.time.toFixed(2)}s. Bar clearance is approximate without bar detection.`,
+        approach: approach.duration !== null ? `About ${approach.duration.toFixed(2)}s. Start at ${approach.start!.toFixed(2)}s; estimated takeoff at ${approach.end!.toFixed(2)}s.` : approach.message,
+        takeoff: `Auto-estimated at ${timeLabel(phases.takeoff)}. Review this frame for takeoff.`,
+        inversion: `Auto-estimated at ${timeLabel(phases.inversion)}. Review the selected inversion frame.`,
+        clearance: `Auto-estimated at ${timeLabel(phases.clearance)}. Bar crossing is approximate.`,
       });
-      await seekVideo(video, phases.inversion.time);
-      setPoseLandmarks(phases.inversion.landmarks);
-      drawPose(phases.inversion.landmarks);
+      const displayFrame = phases.inversion ?? phases.approachStart ?? frames[0];
+      await seekVideo(video, displayFrame.time);
+      drawPose(displayFrame.landmarks);
       setPoseReadout({
-        ...buildPoseReadout(phases.inversion.landmarks, phases.inversion.time),
-        status: `Auto analysis complete: ${frames.length} usable frames. Review the estimated phase times and adjust if needed.`,
+        ...buildPoseReadout(displayFrame.landmarks, displayFrame.time, { width: video.videoWidth, height: video.videoHeight }),
+        frameTime: displayFrame.time,
+        status: `Auto analysis complete: ${frames.length} frames with pose detections. Review the estimated phase times.`,
       });
-
-      if (!wasPaused) video.pause();
     } catch (error) {
       console.error(error);
       setPoseReadout((current) => ({
         ...current,
         status: `Pose AI error: ${error instanceof Error ? error.message : "model could not analyze video"}. Try refreshing or checking your internet connection.`,
       }));
-    }
-  }
-
-  async function markPhase(phaseName: keyof PhaseStatus) {
-    const video = videoRef.current;
-    if (!video || !videoLoaded || !Number.isFinite(video.currentTime)) {
-      alert("Upload a video first.");
-      return;
-    }
-
-    const time = video.currentTime.toFixed(2);
-    if (phaseName === "takeoff") {
-      updateField("takeoffTime", time);
-      setPhaseStatus((current) => ({
-        ...current,
-        takeoff: `Marked at ${time}s. Pose angle will use this frame if analysis succeeds.`,
-      }));
-    }
-
-    if (phaseName === "inversion") {
-      setPhaseStatus((current) => ({
-        ...current,
-        inversion: `Marked at ${time}s. Use this frame for max inversion angle.`,
-      }));
-      updateField("notes", appendNoteOnce(form.notes, `Max inversion marked at ${time}s.`));
-    }
-
-    if (phaseName === "clearance") {
-      updateField("clearanceTime", time);
-      setPhaseStatus((current) => ({
-        ...current,
-        clearance: `Marked at ${time}s. Flight time can now be estimated.`,
-      }));
+    } finally {
+      setAnalyzing(false);
     }
   }
 
@@ -311,6 +309,9 @@ function App() {
     }
 
     const attempt: Attempt = {
+      approachEstimate: form.approachEstimate,
+      measurementVersion: form.measurementVersion,
+      torsoOrientation: parseNumber(form.torsoOrientation ?? ""),
       id: createId(),
       athlete,
       date: form.date,
@@ -337,7 +338,11 @@ function App() {
   }
 
   async function loadAttempt(attempt: Attempt) {
+    resetPoseState();
     setForm({
+      approachEstimate: attempt.approachEstimate,
+      measurementVersion: attempt.measurementVersion,
+      torsoOrientation: attempt.torsoOrientation?.toString() ?? "",
       athlete: attempt.athlete || "",
       date: attempt.date || "",
       barHeight: attempt.barHeight?.toString() || "",
@@ -347,30 +352,37 @@ function App() {
       approachDistance: attempt.approachDistance?.toString() || "",
       approachDistanceUnit: attempt.approachDistanceUnit || "",
       approachTime: attempt.approachTime?.toString() || "",
-      takeoffAngle: attempt.takeoffAngle?.toString() || "",
-      inversionAngle: attempt.inversionAngle?.toString() || "",
-      takeoffTime: attempt.takeoffTime?.toString() || "",
-      clearanceTime: attempt.clearanceTime?.toString() || "",
+      takeoffAngle: attempt.measurementVersion === MEASUREMENT_VERSION ? attempt.takeoffAngle?.toString() ?? "" : "",
+      inversionAngle: attempt.measurementVersion === MEASUREMENT_VERSION ? attempt.inversionAngle?.toString() ?? "" : "",
+      takeoffTime: attempt.measurementVersion === MEASUREMENT_VERSION ? attempt.takeoffTime?.toString() ?? "" : "",
+      clearanceTime: attempt.measurementVersion === MEASUREMENT_VERSION ? attempt.clearanceTime?.toString() ?? "" : "",
       notes: attempt.notes || "",
       result: attempt.result || "",
     });
 
+    if (attempt.measurementVersion !== MEASUREMENT_VERSION) {
+      setPoseReadout({ ...emptyPoseReadout, status: "Saved measurements use different or unknown rules. Reanalyze the video with the study rules before predicting." });
+    }
+
     setPhaseStatus({
+      approach:
+        attempt.approachTime !== null && attempt.approachTime !== undefined
+          ? `Saved ${attempt.approachEstimate ? "estimated" : "manually entered"} run-up time: ${Number(attempt.approachTime).toFixed(2)}s.`
+          : attempt.approachEstimate?.message ?? emptyPhaseStatus.approach,
       takeoff:
         attempt.takeoffTime !== null && attempt.takeoffTime !== undefined
-          ? `Marked at ${Number(attempt.takeoffTime).toFixed(2)}s.`
+          ? `Saved ${attempt.measurementVersion === MEASUREMENT_VERSION ? "study takeoff proxy" : "unversioned takeoff proxy"}: ${Number(attempt.takeoffTime).toFixed(2)}s.`
           : emptyPhaseStatus.takeoff,
       inversion:
         attempt.inversionPhaseTime !== null && attempt.inversionPhaseTime !== undefined
-          ? `Marked at ${Number(attempt.inversionPhaseTime).toFixed(2)}s.`
+          ? `Saved max inversion time: ${Number(attempt.inversionPhaseTime).toFixed(2)}s.`
           : emptyPhaseStatus.inversion,
       clearance:
         attempt.clearanceTime !== null && attempt.clearanceTime !== undefined
-          ? `Marked at ${Number(attempt.clearanceTime).toFixed(2)}s.`
+          ? `Saved ${attempt.measurementVersion === MEASUREMENT_VERSION ? "highest-hip candidate" : "legacy clearance proxy"}: ${Number(attempt.clearanceTime).toFixed(2)}s.`
           : emptyPhaseStatus.clearance,
     });
 
-    resetPoseState();
     if (attempt.videoId) await loadAttemptVideo(attempt.videoId);
   }
 
@@ -439,6 +451,11 @@ function App() {
       "takeoffTime",
       "clearanceTime",
       "notes",
+      "measurementVersion",
+      "torsoOrientationDeg",
+      "approachMethod",
+      "approachStartSeconds",
+      "approachSampleGapSeconds",
     ];
     const rows = attempts.map((attempt) =>
       [
@@ -458,6 +475,11 @@ function App() {
         attempt.takeoffTime,
         attempt.clearanceTime,
         attempt.notes,
+        attempt.measurementVersion ?? "legacy-unversioned",
+        attempt.torsoOrientation,
+        attempt.approachEstimate?.version ?? "manual-or-unknown",
+        attempt.approachEstimate?.start,
+        attempt.approachEstimate?.sampleGap,
       ].map(escapeCsv),
     );
 
@@ -471,6 +493,49 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function drawCurrentPose() {
+    const video = videoRef.current;
+    if (!video) {
+      clearPoseCanvas();
+      return;
+    }
+
+    const frame = nearestPoseFrame(poseTimeline, video.currentTime);
+    drawPose(frame?.landmarks ?? null);
+    if (!analyzing) setPoseReadout(current => current.frameTime === frame?.time ? current : {
+      ...(frame ? buildPoseReadout(frame.landmarks, frame.time, { width: video.videoWidth, height: video.videoHeight }) : emptyPoseReadout),
+      status: current.status, frameTime: frame?.time,
+    });
+  }
+
+  async function reviewMoment(frame: FrameAnalysis | null | undefined) {
+    const video = videoRef.current;
+    if (!video || !frame || analyzing) return;
+    video.pause();
+    try {
+      await seekVideo(video, frame.time);
+      video.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch {
+      setPoseReadout(current => ({ ...current, status: "This moment could not be loaded. Try the video controls." }));
+    }
+  }
+
+  function schedulePoseAnimation() {
+    if (poseAnimationRef.current !== null) return;
+    poseAnimationRef.current = window.requestAnimationFrame(() => {
+      poseAnimationRef.current = null;
+      drawCurrentPose();
+      const video = videoRef.current;
+      if (video && !video.paused && !video.ended) schedulePoseAnimation();
+    });
+  }
+
+  function cancelPoseAnimation() {
+    if (poseAnimationRef.current === null) return;
+    window.cancelAnimationFrame(poseAnimationRef.current);
+    poseAnimationRef.current = null;
+  }
+
   function drawPose(landmarks: Landmark[] | null) {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -479,17 +544,25 @@ function App() {
       return;
     }
 
-    const rect = video.getBoundingClientRect();
+    const videoRect = video.getBoundingClientRect();
+    const stageRect = video.parentElement?.getBoundingClientRect();
     const pixelRatio = window.devicePixelRatio || 1;
     const context = canvas.getContext("2d");
-    if (!context || !rect.width || !rect.height) return;
+    if (!context || !videoRect.width || !videoRect.height || !stageRect) return;
 
-    canvas.style.left = `${rect.left}px`;
-    canvas.style.top = `${rect.top}px`;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
-    canvas.width = Math.max(1, Math.round(rect.width * pixelRatio));
-    canvas.height = Math.max(1, Math.round(rect.height * pixelRatio));
+    const videoAspect = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 1;
+    const boxAspect = videoRect.width / videoRect.height;
+    const contentWidth = boxAspect > videoAspect ? videoRect.height * videoAspect : videoRect.width;
+    const contentHeight = boxAspect > videoAspect ? videoRect.height : videoRect.width / videoAspect;
+    const contentLeft = videoRect.left - stageRect.left + (videoRect.width - contentWidth) / 2;
+    const contentTop = videoRect.top - stageRect.top + (videoRect.height - contentHeight) / 2;
+
+    canvas.style.left = `${contentLeft}px`;
+    canvas.style.top = `${contentTop}px`;
+    canvas.style.width = `${contentWidth}px`;
+    canvas.style.height = `${contentHeight}px`;
+    canvas.width = Math.max(1, Math.round(contentWidth * pixelRatio));
+    canvas.height = Math.max(1, Math.round(contentHeight * pixelRatio));
     canvas.hidden = false;
 
     const connections = [
@@ -575,7 +648,7 @@ function App() {
             </div>
             <div className="pill">Best: {bestMake ? bestMake.label : "--"}</div>
             <div className="pill">{activeUser?.label}</div>
-            <button className="top-button" type="button" onClick={handleSignOut}>
+            <button className="top-button" type="button" onClick={handleSignOut} disabled={analyzing}>
               {activeUser?.isDemo ? "Exit demo" : "Sign out"}
             </button>
           </div>
@@ -583,6 +656,7 @@ function App() {
       </header>
 
       <main>
+        <RegionalFinalUpdate />
         <div className="layout">
           <div className="video-shell">
             <section>
@@ -596,8 +670,15 @@ function App() {
                     hidden={!videoLoaded}
                     src={videoUrl}
                     onLoadedMetadata={handleLoadedMetadata}
-                    onPlay={() => drawPose(poseLandmarks)}
-                    onPause={() => drawPose(poseLandmarks)}
+                    onPlay={schedulePoseAnimation}
+                    onPlaying={schedulePoseAnimation}
+                    onPause={() => {
+                      cancelPoseAnimation();
+                      drawCurrentPose();
+                    }}
+                    onTimeUpdate={drawCurrentPose}
+                    onSeeked={drawCurrentPose}
+                    onEnded={cancelPoseAnimation}
                   />
                   <canvas ref={canvasRef} className="pose-canvas" hidden />
                 </div>
@@ -608,6 +689,7 @@ function App() {
                 </label>
                 <input
                   ref={fileInputRef}
+                  disabled={analyzing}
                   id="videoInput"
                   type="file"
                   accept="video/*"
@@ -616,17 +698,21 @@ function App() {
                 <button className="secondary" type="button" onClick={openVideoFullscreen}>
                   Fullscreen video
                 </button>
-                <button className="secondary" type="button" onClick={analyzeFullVideo}>
-                  Analyze full video
+                <button className="secondary" type="button" onClick={analyzeFullVideo} disabled={analyzing}>
+                  {analyzing ? "Analyzing..." : "Analyze full video"}
                 </button>
               </div>
               <div className="phase-grid">
-                <PhaseCard title="Takeoff" status={phaseStatus.takeoff} button="Mark takeoff" onClick={() => markPhase("takeoff")} />
-                <PhaseCard title="Max inversion" status={phaseStatus.inversion} button="Mark inversion" onClick={() => markPhase("inversion")} />
-                <PhaseCard title="Clearance" status={phaseStatus.clearance} button="Mark clearance" onClick={() => markPhase("clearance")} />
+                <PhaseCard title="Run-up time" status={phaseStatus.approach} />
+                <PhaseCard title="Takeoff" status={phaseStatus.takeoff} />
+                <PhaseCard title="Max inversion" status={phaseStatus.inversion} />
+                <PhaseCard title="Clearance" status={phaseStatus.clearance} />
               </div>
               <div className="analysis-panel">
                 <strong>{poseReadout.status}</strong>
+                <details className="measurement-details">
+                <summary>Joint measurements</summary>
+                <p>{poseReadout.frameTime == null ? "No tracked pose at this video position." : `Estimated pose at ${poseReadout.frameTime.toFixed(2)}s.`} Landmark counts show tracking coverage, not accuracy or a technique score.</p>
                 <ul className="analysis-list">
                   <li>
                     Detected joints: <strong>{poseReadout.jointCount}</strong>
@@ -644,11 +730,19 @@ function App() {
                     Inversion clue: <strong>{poseReadout.inversionClue}</strong>
                   </li>
                 </ul>
+                <p>Knee angles describe bending at the knee: closer to 180 degrees means straighter. The best position depends on the vault phase; these numbers are not target scores. "Ankles above shoulders" describes their positions in the image, not whether the inversion technique is correct.</p>
+                </details>
               </div>
+              <details className="measurement-details">
+                <summary>About these measurements</summary>
+                <p>Angles describe estimated body positions on a 0-180 degree scale, not the launch angle of the athlete's center of mass. Inversion angle measures body alignment, not technique quality. Camera view and missed joints affect the estimates.</p>
+                <p>Run-up time estimates a still-to-moving transition before the estimated takeoff. It requires visible legs and continuous tracking; camera motion, slow-motion video, and phase errors can affect it. This additional estimate is not an input to the make-prediction model and was not evaluated in the 30-video study.</p>
+                <p>Vault time is the interval from estimated takeoff to the highest hip position after inversion. It includes pole support. The joint angles have no validated best target in this app; a straighter body does not always mean a better vault.</p>
+              </details>
               <p className="muted">For useful numbers, film from the side with the full runway, box, standards, and bar visible.</p>
             </section>
 
-            <ResearchPanel attempts={attempts} model={vaultModel} prediction={vaultPrediction} />
+            <PredictionPanel attempts={attempts} model={vaultModel} prediction={vaultPrediction} />
 
             <section>
               <div className="log-header">
@@ -685,7 +779,7 @@ function App() {
                         <td>{attempt.athlete}</td>
                         <td>{formatHeight(attempt.barHeight, attempt.unit)}</td>
                         <td>
-                          <button className="secondary" type="button" onClick={() => loadAttempt(attempt)}>
+                    <button className="secondary" type="button" onClick={() => loadAttempt(attempt)} disabled={analyzing}>
                             Load
                           </button>
                         </td>
@@ -708,7 +802,7 @@ function App() {
           <aside>
             <section>
               <h2>Save Vault</h2>
-              <p className="muted">Enter the attempt details you know. Pose AI can fill angle and timing fields from the video.</p>
+              <p className="muted">Enter the bar height, run full-video analysis, then save the attempt if you want it in your log.</p>
               <div className="grid">
                 <TextField label="Athlete" value={form.athlete} onChange={(value) => updateField("athlete", value)} />
                 <TextField label="Date" type="date" value={form.date} onChange={(value) => updateField("date", value)} />
@@ -723,38 +817,44 @@ function App() {
                   onChange={(value) => updateField("approachDistanceUnit", value as AttemptForm["approachDistanceUnit"])}
                   options={["ft", "m"]}
                 />
-                <TextField label="Approach time in seconds" type="number" value={form.approachTime} onChange={(value) => updateField("approachTime", value)} />
-                <TextField label="Takeoff angle from AI" type="number" value={form.takeoffAngle} onChange={(value) => updateField("takeoffAngle", value)} />
-                <TextField label="Inversion angle from AI" type="number" value={form.inversionAngle} onChange={(value) => updateField("inversionAngle", value)} />
-                <TextField label="Takeoff time from video AI" type="number" value={form.takeoffTime} onChange={(value) => updateField("takeoffTime", value)} />
-                <TextField label="Clearance time from video AI" type="number" value={form.clearanceTime} onChange={(value) => updateField("clearanceTime", value)} />
+                <label className="auto-measurement">Run-up time (estimated seconds)
+                  <input aria-label="Run-up time (estimated seconds)" value={form.approachTime ? displayNumber(form.approachTime, 2) : ""} placeholder={form.approachEstimate ? "Not measurable" : "Not analyzed"} readOnly />
+                  <small>{form.approachEstimate?.message ?? (form.approachTime ? "Previously entered time. Reanalyze for an automatic estimate." : "Available after full-video analysis when the start is visible.")}</small>
+                </label>
+                <TextField label="Takeoff angle from AI" hint="Estimated hip-to-shoulder body-line angle in degrees (0-180), not center-of-mass launch angle." digits={1} type="number" value={form.takeoffAngle} onChange={(value) => updateField("takeoffAngle", value)} />
+                <TextField label="Inversion angle from AI" hint="Estimated shoulder-hip-ankle alignment in degrees (0-180)." digits={1} type="number" value={form.inversionAngle} onChange={(value) => updateField("inversionAngle", value)} />
+                <TextField label="Takeoff time from video AI" hint="Estimated takeoff frame time in seconds." digits={2} type="number" value={form.takeoffTime} onChange={(value) => updateField("takeoffTime", value)} />
+                <TextField label="Clearance time from video AI" hint="Estimated highest-hip frame time after inversion, in seconds; not verified bar crossing." digits={2} type="number" value={form.clearanceTime} onChange={(value) => updateField("clearanceTime", value)} />
                 <label className="full">
                   Notes
-                  <textarea value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
+                  <textarea aria-label="Notes" value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
                 </label>
                 <SelectField label="Result" value={form.result} onChange={(value) => updateField("result", value as AttemptForm["result"])} options={["make", "miss"]} full />
               </div>
               <div className="form-actions">
-                <button type="button" onClick={saveAttempt}>
+                <button type="button" onClick={saveAttempt} disabled={analyzing}>
                   Save attempt
                 </button>
-                <button className="secondary" type="button" onClick={startNewAttempt}>
+                <button className="secondary" type="button" onClick={startNewAttempt} disabled={analyzing}>
                   New attempt
                 </button>
               </div>
 
               <div className="metric-grid">
-                <Metric label="Approach speed" value={metrics.speed ? `${metrics.speed.toFixed(2)} m/s` : "--"} />
+                <Metric label="Average run-up speed" hint="Entered approach distance divided by estimated run-up time. Not speed at takeoff." value={metrics.speed ? `${metrics.speed.toFixed(2)} m/s` : "--"} />
                 <Metric label="Grip over bar" value={metrics.gripOverBar !== null ? `${metrics.gripOverBar.toFixed(2)} m` : "--"} />
-                <Metric label="Flight time" value={metrics.flightTime !== null ? `${metrics.flightTime.toFixed(2)} s` : "--"} />
-                <Metric label="Model tech score" value={vaultPrediction.score !== null ? `${vaultPrediction.score}/100` : "--"} />
+                <Metric label="Vault time" hint="Estimated takeoff-to-clearance interval, including pole support; not unsupported airborne time." value={metrics.flightTime !== null ? `${metrics.flightTime.toFixed(2)} s` : "--"} />
               </div>
-              <ModelScorePanel prediction={vaultPrediction} />
               <div className="coach-panel">
                 <h3>Coach feedback</h3>
+                <p className="muted">Video observations and review points, not a technique grade.</p>
                 <ul className="coach-list">
                   {coachFeedback.length ? coachFeedback.map((item) => <li key={item}>{item}</li>) : <li>Add attempt data and analyze the video to generate feedback.</li>}
                 </ul>
+                <div className="form-actions">
+                  <button className="secondary" type="button" disabled={analyzing || !reviewPhases?.takeoff} onClick={() => reviewMoment(reviewPhases?.takeoff)}>View takeoff</button>
+                  <button className="secondary" type="button" disabled={analyzing || !reviewPhases?.inversion} onClick={() => reviewMoment(reviewPhases?.inversion)}>View inversion</button>
+                </div>
               </div>
             </section>
           </aside>
@@ -764,9 +864,25 @@ function App() {
   );
 }
 
-function readPhaseTime(status: string) {
-  const match = status.match(/Marked at ([0-9.]+)s/);
-  return match ? Number.parseFloat(match[1]) : null;
+function nextValue(value: number | null | undefined) {
+  return value == null ? "unavailable" : `${value.toFixed(1)} deg`;
+}
+
+function RegionalFinalUpdate(props: { compact?: boolean }) {
+  return (
+    <div className={`competition-update ${props.compact ? "compact" : ""}`} role="status" aria-label="Regional final update">
+      <div>
+        <span className="update-kicker">Regional final update</span>
+        <h2>First place at the regional final</h2>
+        <p>VaultLab earned first place and will be presented live in Philadelphia on October 31, 2026.</p>
+      </div>
+      <div className="update-date" aria-label="Live presentation date">
+        <span>Live presentation</span>
+        <strong>Oct. 31</strong>
+        <span>Philadelphia</span>
+      </div>
+    </div>
+  );
 }
 
 function AuthScreen(props: { onDemo: () => void }) {
@@ -818,6 +934,8 @@ function AuthScreen(props: { onDemo: () => void }) {
           </div>
         </div>
 
+        <RegionalFinalUpdate compact />
+
         <div className="auth-tabs">
           <button className={mode === "sign-in" ? "" : "secondary"} type="button" onClick={() => setMode("sign-in")}>
             Sign in
@@ -854,40 +972,27 @@ function AuthScreen(props: { onDemo: () => void }) {
   );
 }
 
-function ResearchPanel(props: { attempts: Attempt[]; model: TrainedVaultModel; prediction: VaultPrediction }) {
-  const completeRows = props.attempts.filter(
-    (attempt) =>
-      attempt.result &&
-      attempt.speed !== null &&
-      attempt.takeoffAngle !== null &&
-      attempt.inversionAngle !== null &&
-      attempt.gripHeight !== null &&
-      attempt.takeoffTime !== null &&
-      attempt.clearanceTime !== null,
-  );
+function PredictionPanel(props: { attempts: Attempt[]; model: TrainedVaultModel; prediction: VaultPrediction }) {
   const makes = props.attempts.filter((attempt) => attempt.result === "make").length;
   const makeRate = props.attempts.length ? Math.round((makes / props.attempts.length) * 100) : null;
 
   return (
-    <section className="research-panel">
+    <section className="prediction-panel">
       <div>
-        <h2>Trained Vault Model</h2>
-        <p className="muted">
-          Pose AI extracts vault variables, logistic regression predicts make probability, and the app translates the model into coaching scores.
-        </p>
+        <h2>Prediction</h2>
+        <p className="muted">Upload a video, enter bar height, then run full-video analysis.</p>
       </div>
       <div className="research-grid">
-        <Metric label="Saved attempts" value={String(props.attempts.length)} />
-        <Metric label={props.model.source === "general" ? "General model rows" : "Training rows"} value={String(props.model.rows)} />
-        <Metric label="Make rate" value={makeRate === null ? "--" : `${makeRate}%`} />
-        <Metric label="Current make probability" value={props.prediction.probability === null ? "--" : `${Math.round(props.prediction.probability * 100)}%`} />
+        <Metric label="Estimated chance of clearing the bar" value={props.prediction.probability === null ? "--" : `${Math.round(props.prediction.probability * 100)}%`} />
+        <Metric label="Your recorded make rate" value={makeRate === null ? "--" : `${makeRate}%`} />
       </div>
       <div className="research-note">
-        <strong>{props.model.status}</strong>
+        <strong>{props.model.ready ? `Built-in logistic model trained on ${props.model.rows} vault attempts. Accuracy on new athletes is not established.` : props.model.status}</strong>
         <span>
-          Model inputs: {props.model.features.map((feature) => readFeatureLabel(feature)).join(", ")}. Target label: make or miss.
+          This estimate is not a technique score or a guarantee. Run-up time and speed do not change this prediction.
         </span>
       </div>
+      <PredictionFactors prediction={props.prediction} />
     </section>
   );
 }
@@ -896,41 +1001,41 @@ function readFeatureLabel(feature: string) {
   const labels: Record<string, string> = {
     barHeight: "bar height",
     speed: "approach speed",
-    takeoffAngle: "takeoff angle",
-    inversionAngle: "inversion angle",
+    takeoffAngle: "Body position at takeoff",
+    inversionAngle: "Body alignment at inversion",
     gripOverBar: "grip over bar",
-    flightTime: "flight time",
+    flightTime: "Vault time",
   };
   return labels[feature] || feature;
 }
 
-function ModelScorePanel(props: { prediction: VaultPrediction }) {
+function PredictionFactors(props: { prediction: VaultPrediction }) {
   return (
-    <div className="model-panel">
+    <details className="model-panel">
+      <summary>What affected this prediction?</summary>
       <div>
-        <h3>Logistic model score</h3>
-        <p className="muted">{props.prediction.message}</p>
+        <p className="muted">Each label shows how this input affects the predicted chance compared with the model's training average. These are statistical effects, not instructions to change your technique.</p>
       </div>
       {props.prediction.features.length ? (
         <div className="factor-list">
           {props.prediction.features.map((feature) => (
             <div className="factor-row" key={feature.key}>
               <div>
-                <strong>{feature.label}</strong>
+                <strong>{readFeatureLabel(feature.key)}</strong>
                 <span>
                   {feature.value.toFixed(feature.unit === "deg" ? 0 : 2)} {feature.unit}
                 </span>
               </div>
               <span className={`factor-effect ${feature.effect}`}>
-                {feature.effect === "neutral" ? "neutral" : feature.effect === "helps" ? "helps make" : "hurts make"}
+                {predictionEffect(feature.contribution)}
               </span>
             </div>
           ))}
         </div>
       ) : (
-        <p className="empty">Train the model with saved make/miss attempts, then complete the current vault fields to see variable-by-variable scoring.</p>
+        <p className="empty">Analyze a video and enter bar height to see model factors.</p>
       )}
-    </div>
+    </details>
   );
 }
 
@@ -957,27 +1062,28 @@ function readAuthError(error: unknown) {
   return message;
 }
 
-function PhaseCard(props: { title: string; status: string; button: string; onClick: () => void }) {
+function PhaseCard(props: { title: string; status: string }) {
   return (
     <div className="phase-card">
       <strong>{props.title}</strong>
       <span>{props.status}</span>
-      <button className="secondary" type="button" onClick={props.onClick}>
-        {props.button}
-      </button>
     </div>
   );
 }
 
-function TextField(props: { label: string; type?: string; value: string; onChange: (value: string) => void }) {
+function TextField(props: { label: string; type?: string; value: string; hint?: string; digits?: number; onChange: (value: string) => void }) {
+  const [focused, setFocused] = useState(false);
   return (
-    <label>
+    <label title={props.hint}>
       {props.label}
       <input
         type={props.type || "text"}
         min={props.type === "number" ? "0" : undefined}
         step={props.type === "number" ? "0.01" : undefined}
-        value={props.value}
+        value={!focused && props.digits !== undefined ? displayNumber(props.value, props.digits) : props.value}
+        aria-description={props.hint}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onChange={(event) => props.onChange(event.target.value)}
       />
     </label>
@@ -1000,9 +1106,9 @@ function SelectField(props: { label: string; value: string; options: string[]; f
   );
 }
 
-function Metric(props: { label: string; value: string }) {
+function Metric(props: { label: string; value: string; hint?: string }) {
   return (
-    <div className="metric">
+    <div className="metric" title={props.hint} aria-description={props.hint}>
       <span>{props.label}</span>
       <strong>{props.value}</strong>
     </div>

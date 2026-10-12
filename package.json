@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node tools/prepare_exact_interface.mjs",
+    "prebuild": "node tools/prepare_exact_interface.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"

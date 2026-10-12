@@ -1,6 +1,15 @@
 export type Unit = "" | "m" | "ft";
 export type AttemptResult = "" | "make" | "miss";
 
+export type ApproachEstimate = {
+  version: "approach-motion-v1";
+  start: number | null;
+  end: number | null;
+  duration: number | null;
+  sampleGap: number | null;
+  message: string;
+};
+
 export type Landmark = {
   x: number;
   y: number;
@@ -9,12 +18,16 @@ export type Landmark = {
 };
 
 export type PhaseStatus = {
+  approach: string;
   takeoff: string;
   inversion: string;
   clearance: string;
 };
 
 export type AttemptForm = {
+  approachEstimate?: ApproachEstimate;
+  measurementVersion?: string;
+  torsoOrientation?: string;
   athlete: string;
   date: string;
   barHeight: string;
@@ -33,6 +46,9 @@ export type AttemptForm = {
 };
 
 export type Attempt = {
+  approachEstimate?: ApproachEstimate;
+  measurementVersion?: string;
+  torsoOrientation?: number | null;
   id: string;
   athlete: string;
   date: string;
@@ -63,6 +79,8 @@ export type Metrics = {
 };
 
 export type PoseReadout = {
+  frameTime?: number;
+  torsoOrientation: string;
   status: string;
   jointCount: string;
   bodyLineAngle: string;
@@ -72,6 +90,8 @@ export type PoseReadout = {
 };
 
 export type FrameAnalysis = {
+  measurementVersion: string;
+  torsoOrientation: number | null;
   time: number;
   landmarks: Landmark[];
   shoulder: Landmark | null;
@@ -84,7 +104,8 @@ export type FrameAnalysis = {
 };
 
 export type VaultPhases = {
-  takeoff: FrameAnalysis;
-  inversion: FrameAnalysis;
-  clearance: FrameAnalysis;
+  approachStart: FrameAnalysis | null;
+  takeoff: FrameAnalysis | null;
+  inversion: FrameAnalysis | null;
+  clearance: FrameAnalysis | null;
 };
