@@ -1,0 +1,579 @@
+{
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "statsmodels": "0.15.0",
+    "sklearn": "1.9.0",
+    "matplotlib": "3.11.1"
+  },
+  "provenance": {
+    "model_output\\vault_pose_extracted_dataset.csv": "6e33f762a4ee3819b1cdc4be234b07f473fd81c44cbf1d2e05067018c35e9098",
+    "model_output\\balanced_pose_vault_logistic_model.json": "81374a13720f22af8d3a99f803e8459b1264bb4f0ca0986e3a8fe7e7b94a3824",
+    "tools\\train_pose_logistic_model.py": "0d4ab7a0d836b994d8cf12fda6612709efc96c89ff02b2b306d4b4173cd1962b",
+    "tools\\batch_pose_extract.html": "ffc0b567095dc6711a37de03b4c703de1efe04e3132645c89a97b3cc9f277a25",
+    "src\\poseAnalysis.ts": "1b0263c5a216568597c2ad121655a0ba0bff9d66da0f5f71d4a0d7bd42605de8"
+  },
+  "n": 30,
+  "all_extracted": 35,
+  "makes": 15,
+  "misses": 15,
+  "feature_summary": {
+    "bar_height_m": {
+      "all": {
+        "n": 30,
+        "mean": 3.850866666666667,
+        "sd": 1.0798321435914626,
+        "min": 1.8288000000000002,
+        "max": 5.486400000000001,
+        "median": 3.6068000000000002
+      },
+      "make": {
+        "n": 15,
+        "mean": 3.6273333333333335,
+        "sd": 0.9810340724508622,
+        "min": 2.0,
+        "max": 5.3,
+        "median": 3.5052000000000003
+      },
+      "miss": {
+        "n": 15,
+        "mean": 4.0744,
+        "sd": 1.1601133516046735,
+        "min": 1.8288000000000002,
+        "max": 5.486400000000001,
+        "median": 4.74
+      }
+    },
+    "takeoff_angle_deg": {
+      "all": {
+        "n": 30,
+        "mean": 66.8493289078798,
+        "sd": 45.77991562178505,
+        "min": 0.7171796756335348,
+        "max": 159.11738210737673,
+        "median": 84.0249126606407
+      },
+      "make": {
+        "n": 15,
+        "mean": 65.62625221846966,
+        "sd": 47.27180151720207,
+        "min": 0.7171796756335348,
+        "max": 159.11738210737673,
+        "median": 68.14814355751375
+      },
+      "miss": {
+        "n": 15,
+        "mean": 68.07240559728992,
+        "sd": 45.86363093579329,
+        "min": 0.8491296224796447,
+        "max": 124.72783842248433,
+        "median": 92.36219394310699
+      }
+    },
+    "inversion_angle_deg": {
+      "all": {
+        "n": 30,
+        "mean": 124.85754813688155,
+        "sd": 49.598870094849865,
+        "min": 0.6839379505678937,
+        "max": 179.38023566111184,
+        "median": 141.1338626439735
+      },
+      "make": {
+        "n": 15,
+        "mean": 119.10349975523611,
+        "sd": 49.58813311252963,
+        "min": 36.308205790962575,
+        "max": 176.66871439848663,
+        "median": 131.99663602347778
+      },
+      "miss": {
+        "n": 15,
+        "mean": 130.61159651852697,
+        "sd": 50.65454154250216,
+        "min": 0.6839379505678937,
+        "max": 179.38023566111184,
+        "median": 148.00959462422435
+      }
+    },
+    "flight_time_s": {
+      "all": {
+        "n": 30,
+        "mean": 2.2518941387314197,
+        "sd": 1.4573356507477253,
+        "min": 0.12702702702702728,
+        "max": 5.162951194444444,
+        "median": 1.8848852661943318
+      },
+      "make": {
+        "n": 15,
+        "mean": 1.9667612351839265,
+        "sd": 1.1643625536399813,
+        "min": 0.637931034482758,
+        "max": 4.084218482758621,
+        "median": 1.7620253164556965
+      },
+      "miss": {
+        "n": 15,
+        "mean": 2.5370270422789107,
+        "sd": 1.6939304126422252,
+        "min": 0.12702702702702728,
+        "max": 5.162951194444444,
+        "median": 2.4102785892857135
+      }
+    }
+  },
+  "extraction": {
+    "complete": 30,
+    "status_ok": 30,
+    "pose_returning_frames": 1157,
+    "sampled_frames": 1694,
+    "coverage": 0.6829988193624558,
+    "frames_per_clip": {
+      "n": 30,
+      "mean": 38.56666666666667,
+      "sd": 17.715536398457076,
+      "min": 12.0,
+      "max": 71.0,
+      "median": 38.0
+    },
+    "duration_s": {
+      "n": 30,
+      "mean": 7.6838274,
+      "sd": 3.710814812124742,
+      "min": 2.166667,
+      "max": 17.77,
+      "median": 7.2519895000000005
+    },
+    "visible_count_per_clip": {
+      "n": 30,
+      "mean": 31.063722227319513,
+      "sd": 2.0716724070067105,
+      "min": 25.22222222222222,
+      "max": 33.0,
+      "median": 31.38982683982684
+    },
+    "weighted_visible": 30.732065687121867
+  },
+  "deployed_model": {
+    "model_type": "logistic_regression",
+    "target": "make_probability",
+    "features": [
+      "bar_height_m",
+      "takeoff_angle_deg",
+      "inversion_angle_deg",
+      "flight_time_s"
+    ],
+    "mean": {
+      "bar_height_m": 3.850866666666667,
+      "takeoff_angle_deg": 66.8493289078798,
+      "inversion_angle_deg": 124.85754813688156,
+      "flight_time_s": 2.2518941387314184
+    },
+    "scale": {
+      "bar_height_m": 1.061682411578696,
+      "takeoff_angle_deg": 45.01045047386033,
+      "inversion_angle_deg": 48.76521626661363,
+      "flight_time_s": 1.4328408700813988
+    },
+    "intercept": -0.0016733437227014582,
+    "coefficients": {
+      "bar_height_m": -0.3182411136983498,
+      "takeoff_angle_deg": -0.04341436748346155,
+      "inversion_angle_deg": -0.1410757359564984,
+      "flight_time_s": -0.25305341126748027
+    },
+    "training_rows": 30,
+    "makes": 15,
+    "misses": 15
+  },
+  "training": {
+    "auc": 0.6755555555555555,
+    "accuracy": 0.6666666666666666,
+    "tn": 9,
+    "fp": 6,
+    "fn": 4,
+    "tp": 11,
+    "sensitivity": 0.7333333333333333,
+    "specificity": 0.6,
+    "brier": 0.22995068850199799
+  },
+  "leave_one_out": {
+    "auc": 0.3111111111111111,
+    "accuracy": 0.43333333333333335,
+    "tn": 5,
+    "fp": 10,
+    "fn": 7,
+    "tp": 8,
+    "sensitivity": 0.5333333333333333,
+    "specificity": 0.3333333333333333,
+    "brier": 0.3081095203336993
+  },
+  "holdout": {
+    "train_rows": 22,
+    "test_rows": 8,
+    "test_accuracy": 0.25
+  },
+  "inference": {
+    "estimator": "unpenalized Logit maximum likelihood; exploratory separate refit",
+    "converged": true,
+    "lr_chi2": 2.587479950670101,
+    "lr_p": 0.6290425906115158,
+    "aic": 49.001350882926594,
+    "coefficients": [
+      {
+        "feature": "intercept",
+        "beta": -0.003660122224287958,
+        "se": 0.38162345320129876,
+        "wald": 9.198585775612085e-05,
+        "p": 0.9923476656960214,
+        "odds_ratio": 0.996346567858398,
+        "or_low": 0.4715980023841057,
+        "or_high": 2.1049844958305672
+      },
+      {
+        "feature": "bar_height_m",
+        "beta": -0.4336788801850021,
+        "se": 0.3935609866610879,
+        "wald": 1.2142621685314434,
+        "p": 0.27048965012751003,
+        "odds_ratio": 0.64812034635823,
+        "or_low": 0.29967874150414703,
+        "or_high": 1.4017009723650993
+      },
+      {
+        "feature": "takeoff_angle_deg",
+        "beta": -0.0622141130099127,
+        "se": 0.3774975011090822,
+        "wald": 0.027161244517668163,
+        "p": 0.8690961395085968,
+        "odds_ratio": 0.9396816671798697,
+        "or_low": 0.4483883275585198,
+        "or_high": 1.9692788178539227
+      },
+      {
+        "feature": "inversion_angle_deg",
+        "beta": -0.18251921086539952,
+        "se": 0.40047185282349484,
+        "wald": 0.2077175400090267,
+        "p": 0.648562284945543,
+        "odds_ratio": 0.8331686378840285,
+        "or_low": 0.3800586792054124,
+        "or_high": 1.826481059726952
+      },
+      {
+        "feature": "flight_time_s",
+        "beta": -0.3249749125202521,
+        "se": 0.40268447436965077,
+        "wald": 0.6512832364611224,
+        "p": 0.4196542623678192,
+        "odds_ratio": 0.7225454802597986,
+        "or_low": 0.328170503007586,
+        "or_high": 1.5908558699189206
+      }
+    ]
+  },
+  "rows": [
+    {
+      "file": "10 feet 9 inches, miss.mp4",
+      "y": 0,
+      "bar_height_m": 3.2766,
+      "takeoff_angle_deg": 23.717924350051643,
+      "inversion_angle_deg": 78.13484116519341,
+      "flight_time_s": 0.7536233043478261,
+      "training_probability": 0.6483608345457884,
+      "loo_probability": 0.7186039639277189
+    },
+    {
+      "file": "10 feet, miss.mp4",
+      "y": 0,
+      "bar_height_m": 3.048,
+      "takeoff_angle_deg": 124.72783842248433,
+      "inversion_angle_deg": 102.04694204194232,
+      "flight_time_s": 1.9210527631578946,
+      "training_probability": 0.5762947188153702,
+      "loo_probability": 0.6386424890565715
+    },
+    {
+      "file": "11 feet 1 inch, miss.mp4",
+      "y": 0,
+      "bar_height_m": 3.3528000000000002,
+      "takeoff_angle_deg": 119.48092661247236,
+      "inversion_angle_deg": 148.00959462422435,
+      "flight_time_s": 4.1708335624999995,
+      "training_probability": 0.4233531702646865,
+      "loo_probability": 0.4804580165670238
+    },
+    {
+      "file": "11 feet 10 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 3.6068000000000002,
+      "takeoff_angle_deg": 24.8241693908087,
+      "inversion_angle_deg": 76.77798985858679,
+      "flight_time_s": 2.166814189873418,
+      "training_probability": 0.5661448105457952,
+      "loo_probability": 0.5262406969915708
+    },
+    {
+      "file": "11 feet 10 inches, miss.mp4",
+      "y": 0,
+      "bar_height_m": 3.6068000000000002,
+      "takeoff_angle_deg": 93.66455622251364,
+      "inversion_angle_deg": 177.4233095599116,
+      "flight_time_s": 0.5182418536585365,
+      "training_probability": 0.5497673490218005,
+      "loo_probability": 0.632832212292948
+    },
+    {
+      "file": "11 feet 3 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 3.4290000000000003,
+      "takeoff_angle_deg": 99.89782384326713,
+      "inversion_angle_deg": 63.14124080992731,
+      "flight_time_s": 1.1341772151898741,
+      "training_probability": 0.6151109462505496,
+      "loo_probability": 0.5725408174256624
+    },
+    {
+      "file": "11 feet 6 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 3.5052000000000003,
+      "takeoff_angle_deg": 83.64792732887746,
+      "inversion_angle_deg": 167.87344739374873,
+      "flight_time_s": 1.848717769230769,
+      "training_probability": 0.508124164335522,
+      "loo_probability": 0.4729094299341709
+    },
+    {
+      "file": "11 feet 6 inches, miss.mp4",
+      "y": 0,
+      "bar_height_m": 3.5052000000000003,
+      "takeoff_angle_deg": 13.85280736211839,
+      "inversion_angle_deg": 154.5070659654609,
+      "flight_time_s": 1.69866684,
+      "training_probability": 0.5411538119688377,
+      "loo_probability": 0.5940354905304148
+    },
+    {
+      "file": "11 feet, make (2).mp4",
+      "y": 1,
+      "bar_height_m": 3.3528000000000002,
+      "takeoff_angle_deg": 5.545678955349317,
+      "inversion_angle_deg": 88.97904441790959,
+      "flight_time_s": 2.685654088607595,
+      "training_probability": 0.5582201284963025,
+      "loo_probability": 0.5023159496647904
+    },
+    {
+      "file": "11 feet, make (3).mp4",
+      "y": 1,
+      "bar_height_m": 3.3528000000000002,
+      "takeoff_angle_deg": 100.83907444256214,
+      "inversion_angle_deg": 131.99663602347778,
+      "flight_time_s": 1.6804878048780485,
+      "training_probability": 0.5486211876456981,
+      "loo_probability": 0.5199609340092735
+    },
+    {
+      "file": "12 feet 10 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 3.9116000000000004,
+      "takeoff_angle_deg": 0.7171796756335348,
+      "inversion_angle_deg": 175.16186404856305,
+      "flight_time_s": 4.050632911392405,
+      "training_probability": 0.39668571431109173,
+      "loo_probability": 0.29433817827479775
+    },
+    {
+      "file": "12 feet 10.25 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 3.91795,
+      "takeoff_angle_deg": 16.645876057113814,
+      "inversion_angle_deg": 176.66871439848663,
+      "flight_time_s": 1.7620253164556965,
+      "training_probability": 0.49081841162985956,
+      "loo_probability": 0.43056287273926797
+    },
+    {
+      "file": "14 feet 8.75 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 4.48945,
+      "takeoff_angle_deg": 33.47210997285762,
+      "inversion_angle_deg": 94.39839167956409,
+      "flight_time_s": 0.8933333000000001,
+      "training_probability": 0.5416919143397474,
+      "loo_probability": 0.5002775865301048
+    },
+    {
+      "file": "15 feet, make.mp4",
+      "y": 1,
+      "bar_height_m": 4.572,
+      "takeoff_angle_deg": 62.6444216558636,
+      "inversion_angle_deg": 172.0074421730397,
+      "flight_time_s": 3.696202632911393,
+      "training_probability": 0.35314124245131173,
+      "loo_probability": 0.29310797063037
+    },
+    {
+      "file": "16 feet 8 inches, miss.mp4",
+      "y": 0,
+      "bar_height_m": 5.080000000000001,
+      "takeoff_angle_deg": 0.8491296224796447,
+      "inversion_angle_deg": 143.51538742095622,
+      "flight_time_s": 0.12702702702702728,
+      "training_probability": 0.5037117256901352,
+      "loo_probability": 0.6266752677296173
+    },
+    {
+      "file": "16 feet 9 inches, miss.mp4",
+      "y": 0,
+      "bar_height_m": 5.1054,
+      "takeoff_angle_deg": 1.2503017243743162,
+      "inversion_angle_deg": 83.76712463937798,
+      "flight_time_s": 2.5833331250000002,
+      "training_probability": 0.43681180373625317,
+      "loo_probability": 0.5073109974435682
+    },
+    {
+      "file": "18 feet, miss.mp4",
+      "y": 0,
+      "bar_height_m": 5.486400000000001,
+      "takeoff_angle_deg": 94.83209169932775,
+      "inversion_angle_deg": 83.32723365267003,
+      "flight_time_s": 0.3789473684210529,
+      "training_probability": 0.48300855934986753,
+      "loo_probability": 0.5812653515001516
+    },
+    {
+      "file": "2.00 meters, make.mp4",
+      "y": 1,
+      "bar_height_m": 2.0,
+      "takeoff_angle_deg": 68.14814355751375,
+      "inversion_angle_deg": 138.75233786699073,
+      "flight_time_s": 1.2592593055555557,
+      "training_probability": 0.665296135374546,
+      "loo_probability": 0.6244688796559236
+    },
+    {
+      "file": "4.74 meters, miss.mp4",
+      "y": 0,
+      "bar_height_m": 4.74,
+      "takeoff_angle_deg": 93.06254936755359,
+      "inversion_angle_deg": 168.3388579193735,
+      "flight_time_s": 5.162951194444444,
+      "training_probability": 0.28223818825605007,
+      "loo_probability": 0.3273843859781743
+    },
+    {
+      "file": "4.8 meters, miss (2).mp4",
+      "y": 0,
+      "bar_height_m": 4.8,
+      "takeoff_angle_deg": 92.36219394310699,
+      "inversion_angle_deg": 0.6839379505678937,
+      "flight_time_s": 4.448938607594936,
+      "training_probability": 0.41591250970819466,
+      "loo_probability": 0.6462595380286177
+    },
+    {
+      "file": "4.8 meters, miss (3).mp4",
+      "y": 0,
+      "bar_height_m": 4.8,
+      "takeoff_angle_deg": 120.81021173486258,
+      "inversion_angle_deg": 178.71806841229684,
+      "flight_time_s": 2.151817613333332,
+      "training_probability": 0.38311040457504514,
+      "loo_probability": 0.4403234081239661
+    },
+    {
+      "file": "4.8 meters, miss.mp4",
+      "y": 0,
+      "bar_height_m": 4.8,
+      "takeoff_angle_deg": 93.8547745157837,
+      "inversion_angle_deg": 155.27332918576784,
+      "flight_time_s": 3.9856891904761906,
+      "training_probability": 0.33038995322020825,
+      "loo_probability": 0.364765175811754
+    },
+    {
+      "file": "5.20 meters, make.mp4",
+      "y": 1,
+      "bar_height_m": 5.2,
+      "takeoff_angle_deg": 22.806578904214753,
+      "inversion_angle_deg": 36.308205790962575,
+      "flight_time_s": 0.765853609756098,
+      "training_probability": 0.5386778619083512,
+      "loo_probability": 0.43125769990745166
+    },
+    {
+      "file": "5.30 meters, make.mp4",
+      "y": 1,
+      "bar_height_m": 5.3,
+      "takeoff_angle_deg": 93.61103389406676,
+      "inversion_angle_deg": 175.1086333766248,
+      "flight_time_s": 4.084218482758621,
+      "training_probability": 0.28275299563849615,
+      "loo_probability": 0.18300360549401928
+    },
+    {
+      "file": "5.4 meters, miss.mp4",
+      "y": 0,
+      "bar_height_m": 5.4,
+      "takeoff_angle_deg": 85.0715617271957,
+      "inversion_angle_deg": 146.6649987605027,
+      "flight_time_s": 2.4102785892857135,
+      "training_probability": 0.3601610930686495,
+      "loo_probability": 0.3978816094346779
+    },
+    {
+      "file": "6 feet, miss.mp4",
+      "y": 0,
+      "bar_height_m": 1.8288000000000002,
+      "takeoff_angle_deg": 12.421089866540113,
+      "inversion_angle_deg": 179.38023566111184,
+      "flight_time_s": 2.7953970000000004,
+      "training_probability": 0.5994618024061437,
+      "loo_probability": 0.7448247960666659
+    },
+    {
+      "file": "7 feet 6 inches, miss.mp4",
+      "y": 0,
+      "bar_height_m": 2.286,
+      "takeoff_angle_deg": 51.12812678848414,
+      "inversion_angle_deg": 159.38302081854735,
+      "flight_time_s": 4.948607594936709,
+      "training_probability": 0.4766209789291502,
+      "loo_probability": 0.5992634004317879
+    },
+    {
+      "file": "7 feet, make.mp4",
+      "y": 1,
+      "bar_height_m": 2.1336,
+      "takeoff_angle_deg": 84.40189799240393,
+      "inversion_angle_deg": 45.936825727397746,
+      "flight_time_s": 0.637931034482758,
+      "training_probability": 0.7329234236987708,
+      "loo_probability": 0.6846135158753961
+    },
+    {
+      "file": "9 feet 6 inches, make.mp4",
+      "y": 1,
+      "bar_height_m": 2.8956,
+      "takeoff_angle_deg": 159.11738210737673,
+      "inversion_angle_deg": 136.5545214279005,
+      "flight_time_s": 1.8133332000000002,
+      "training_probability": 0.5595382964127555,
+      "loo_probability": 0.47010465504287574
+    },
+    {
+      "file": "9 feet, make.mp4",
+      "y": 1,
+      "bar_height_m": 2.7432000000000003,
+      "takeoff_angle_deg": 128.07448549913565,
+      "inversion_angle_deg": 106.88720133536194,
+      "flight_time_s": 1.0227776666666668,
+      "training_probability": 0.6318958634050234,
+      "loo_probability": 0.5805602373338846
+    }
+  ]
+}

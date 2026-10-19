@@ -26,3 +26,61 @@ paper_render/
 paper_pdf_render/
 submission_build/node_modules/
 dataset_preview/
+
+# Local research, media, generated reports, and temporary dependencies.
+/.chart-data-*/
+/.codex-finalizer/
+/.video-tools/
+/tmp/
+/output/
+/competition_submission/
+/final submission for sep.15/
+/paper_render_revised/
+/pole vault videos miss and makes/
+/model_output/measurement_audit_v2/
+/*.docx
+/*.pdf
+/*.pptx
+/*.png
+/*.url
+/REAL_APP_BLUEPRINT.md
+/HOSTING_RESTORATION.md
+/Pole_Vault_CV_Deep_Learning_Research_Map.txt
+/starter.html
+/submission_build/
+
+# Generated production entrypoint; keep the baseline and original CSS tracked.
+/restored-app/app.js
+/restored-app/index.html
+/restored-app/baseline/verification.json
+/restored-app/assets/regional-update.css
+
+# Local document and presentation production tools.
+/tools/build_*.py
+/tools/build_*.mjs
+/tools/build_*.ps1
+/tools/create_*.py
+/tools/analyze_research_revision_2.py
+/tools/analyze_restored_replay.py
+/tools/apply_research_paper_revision_*.py
+/tools/batch_pose_extract_v2.html
+/tools/check_approach_tracks.mjs
+/tools/check_submission_sep15.py
+/tools/capture_current_app_demo.mjs
+/tools/edit_research_revision_4.py
+/tools/export_revision4_pdf.ps1
+/tools/extract_*_tmp.py
+/tools/inspect_ppt_text_tmp.py
+/tools/prepare_demo_screenshot_for_pdf.py
+/tools/recreate_reviewed_cast_deck.mjs
+/tools/render_cast_demo_pages.py
+/tools/cjsj_figures_build/
+/tools/cjsj_paper_build/
+/tools/competition_slides_build/
+/tools/research_revision_2/
+/tools/research_revision_2_deps/
+/tools/research_revision_3_qa/
+/tools/revision_1_qa/
+/tools/make_seq_contact_sheet.py
+/tools/preview_seq_dataset.py
+/tools/compare_clean_pose_models.py

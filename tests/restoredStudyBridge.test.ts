@@ -58,7 +58,7 @@ test('actual generated predictor preserves all 30 original training probabilitie
   const api=vm.runInNewContext(`${code}; ({model:yE, select:SE, predict:_E, vector:bE})`,{
     __study:bridge, wo:(f:any)=>Number(f.barHeight),
   });
-  const data=JSON.parse(fs.readFileSync('tools/research_revision_2/statistics.json','utf8'));
+  const data=JSON.parse(fs.readFileSync('tests/fixtures/study-statistics.json','utf8'));
   let correct=0;
   for(const row of data.rows) {
     const phase={...phases(row.takeoff_angle_deg,0,row.flight_time_s),inversion:{time:0,inversionAngle:row.inversion_angle_deg} as FrameAnalysis};

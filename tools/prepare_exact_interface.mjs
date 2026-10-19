@@ -7,7 +7,7 @@ const root=process.cwd(), target=path.join(root,'restored-app');
 fs.mkdirSync(path.join(target,'baseline'),{recursive:true});
 fs.mkdirSync(path.join(target,'assets'),{recursive:true});
 const baseline=path.join(target,'baseline/app.original.js');
-if(!fs.existsSync(baseline)) fs.copyFileSync('output/research_restored_20260913/published-index-DHztDhVJ.js',baseline);
+if(!fs.existsSync(baseline)) throw new Error('Missing tracked interface baseline: restored-app/baseline/app.original.js');
 const source=fs.readFileSync(baseline,'utf8');
 const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
 const regionalUpdateCss = `.regional-update {
@@ -152,11 +152,7 @@ const before=renderCalls(tree,source),after=renderCalls(parsed,generated);
 if(JSON.stringify(before)!==JSON.stringify(after)) throw new Error('Interface render code changed');
 fs.writeFileSync(path.join(target,'app.js'),'import * as __study from "../src/restoredStudyBridge.ts";\n'+generated);
 const cssPath=path.join(target,'assets/index-Cj98egCU.css');
-if(!fs.existsSync(cssPath)) {
-  const response=await fetch('https://pvanalysis-68252.web.app/assets/index-Cj98egCU.css');
-  if(!response.ok) throw new Error('Cannot retrieve original stylesheet');
-  fs.writeFileSync(cssPath,Buffer.from(await response.arrayBuffer()));
-}
+if(!fs.existsSync(cssPath)) throw new Error('Missing tracked interface stylesheet: restored-app/assets/index-Cj98egCU.css');
 if(hash(fs.readFileSync(cssPath))!=='33bb2c7a2c5f27a834b01fe2e8f9c64e934c21b182115e1d62bc95da803bdbff') throw new Error('Original stylesheet checksum mismatch');
 fs.writeFileSync(path.join(target,'assets/regional-update.css'),regionalUpdateCss);
 fs.writeFileSync(path.join(target,'index.html'),`<!doctype html>

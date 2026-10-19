@@ -3,3 +3,5 @@
 *.pptx binary
 *.mp4 binary
 *.url text eol=crlf
+restored-app/baseline/app.original.js -text
+restored-app/assets/index-Cj98egCU.css -text

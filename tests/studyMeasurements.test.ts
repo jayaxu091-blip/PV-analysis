@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { buildFrameAnalysis, estimateVaultPhases, lineAngle, sampleCountForVideo, MEASUREMENT_VERSION } from "../src/studyMeasurements";
 import { formVector, generalVaultModel, predictVault, trainVaultModel } from "../src/vaultModel";
@@ -26,8 +26,11 @@ function compareFrames(raw: { time: number; landmarks: Landmark[] }[], size: { w
   }
 }
 
-test("frame measurements and event selection match original JS on saved pose tracks", () => {
-  const clips = json("model_output/measurement_audit_v2/2026-09-12T15-35-41-914Z/extraction_with_landmarks.json");
+const savedTracks = "model_output/measurement_audit_v2/2026-09-12T15-35-41-914Z/extraction_with_landmarks.json";
+test("frame measurements and event selection match original JS on saved pose tracks", {
+  skip: existsSync(savedTracks) ? false : "Optional local landmark audit fixture is unavailable",
+}, () => {
+  const clips = json(savedTracks);
   for (const clip of clips) compareFrames(clip.frames, { width: clip.width, height: clip.height });
 });
 
