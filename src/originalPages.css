@@ -1,0 +1,7 @@
+/* Only the new navigation and page visibility; original panel styles are intact. */
+.three-page-navigation { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.original-page[hidden] { display: none !important; }
+.standalone-panel-layout { width: 100%; max-width: 1040px; margin-inline: auto; }
+.pose-results-group { min-width: 0; margin: 22px 0 18px; padding: 16px 0 0; border: 0; border-top: 1px solid var(--line); }
+.pose-results-group legend { padding: 0 10px 0 0; font-size: 16px; font-weight: 700; }
+.jump-details-sections { display: grid; gap: 18px; }

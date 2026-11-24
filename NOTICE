@@ -1,0 +1,18 @@
+VaultLab includes original project code and third-party software.
+
+The root MIT License applies to the original project code. It does not
+relicense third-party software, pretrained model weights, or externally
+sourced media. Existing upstream notices must be retained.
+
+Third-party components include React and React DOM, Firebase, TypeScript,
+Vite, and MediaPipe Tasks Vision / Pose Landmarker Lite. Their license terms
+remain with their respective packages and upstream distributions. The
+archived production JavaScript includes bundled upstream runtime code and
+its existing license notices.
+
+MediaPipe's pose network is pretrained; VaultLab does not claim to have
+trained that network. Python tools train the separate logistic-regression
+models from extracted vault features.
+
+Raw athlete videos and local research/submission media are not distributed
+as part of this repository. Their owners retain their rights.

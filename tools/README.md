@@ -6,6 +6,9 @@ Run commands from the repository root.
 
 - `prepare_exact_interface.mjs`: regenerates the preserved interface; runs automatically before development, builds, and tests.
 - `test_pose_measurements.mjs`: bundles and runs the TypeScript test files; use `pnpm test`.
+- `test_login_screen.mjs`: checks the generated login, provider handlers, and email/demo controls; also runs through `pnpm test`.
+- `separate_original_pages.mjs`: turns the preserved panels into four navigable production views.
+- `templates/login-screen.tsx`: source for the current production login; included by the build generator.
 
 ## Data and Training
 

@@ -37,7 +37,7 @@ import { estimateApproach } from "./approachAnalysis";
 import { buildAthleteFeedback, predictionEffect } from "./athleteFeedback";
 
 const emptyPoseReadout: PoseReadout = {
-  status: "Pose AI has not analyzed this video yet.",
+  status: "MediaPipe Pose Landmarker Lite has not analyzed this video yet.",
   jointCount: "--",
   bodyLineAngle: "--",
   torsoOrientation: "--",
@@ -270,7 +270,7 @@ function App() {
       console.error(error);
       setPoseReadout((current) => ({
         ...current,
-        status: `Pose AI error: ${error instanceof Error ? error.message : "model could not analyze video"}. Try refreshing or checking your internet connection.`,
+        status: `MediaPipe Pose Landmarker Lite error: ${error instanceof Error ? error.message : "model could not analyze video"}. Try refreshing or checking your internet connection.`,
       }));
     } finally {
       setAnalyzing(false);

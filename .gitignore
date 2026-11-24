@@ -84,3 +84,36 @@ dataset_preview/
 /tools/make_seq_contact_sheet.py
 /tools/preview_seq_dataset.py
 /tools/compare_clean_pose_models.py
+
+# Local research environments and submission packages.
+/.latex-tools/
+/.model-tools/
+/.pose-tools/
+/.tracking-tools/
+/Ultralytics/
+/FINAL_SUBMISSIONS/
+/cleanup_records/
+/RESEARCH_SUBMISSION_PLAN_*.md
+/.wakatime.cfg
+
+# Curate GitHub's tools folder; keep unrelated local production scripts on disk.
+/tools/*
+!/tools/README.md
+!/tools/batch_pose_extract.html
+!/tools/compare_pose_feature_sets.py
+!/tools/compare_selected_pose_models.py
+!/tools/prepare_exact_interface.mjs
+!/tools/render_research_pose_figure.mjs
+!/tools/replay_restored_app.mjs
+!/tools/run_batch_pose_extract.mjs
+!/tools/run_pose_audit.mjs
+!/tools/smoke_pose_v2.mjs
+!/tools/test_pose_measurements.mjs
+!/tools/test_login_screen.mjs
+!/tools/separate_original_pages.mjs
+!/tools/train_general_logistic_model.py
+!/tools/train_pose_logistic_model.py
+!/tools/verify_exact_interface.mjs
+!/tools/templates/
+/tools/templates/*
+!/tools/templates/login-screen.tsx

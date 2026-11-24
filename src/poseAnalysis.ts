@@ -29,7 +29,7 @@ export function buildPoseReadout(landmarks: Landmark[], time: number, size: Imag
   const frame = buildFrameAnalysis(time, landmarks, size);
   const format = (value: number | null) => value === null ? "--" : `${value.toFixed(1)} deg`;
   return {
-    status: `Pose AI analyzed frame at ${time.toFixed(2)}s.`,
+    status: `MediaPipe Pose Landmarker Lite analyzed frame at ${time.toFixed(2)}s.`,
     jointCount: `${frame.visibleCount} of 33`,
     bodyLineAngle: format(frame.bodyLine),
     torsoOrientation: format(frame.torsoOrientation),

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import ts from 'typescript';
+import { separateOriginalPages } from './separate_original_pages.mjs';
 
 const root=process.cwd(), target=path.join(root,'restored-app');
 fs.mkdirSync(path.join(target,'baseline'),{recursive:true});
@@ -150,13 +151,47 @@ function renderCalls(tree,text) {
 }
 const before=renderCalls(tree,source),after=renderCalls(parsed,generated);
 if(JSON.stringify(before)!==JSON.stringify(after)) throw new Error('Interface render code changed');
-fs.writeFileSync(path.join(target,'app.js'),'import * as __study from "../src/restoredStudyBridge.ts";\n'+generated);
+// Preserve the exact logged-in interface and original authentication handlers.
+// Replace only the login rendering, using that bundle's own React/JSX runtime.
+const templatePath=path.join(root,'tools/templates/login-screen.tsx');
+const loginTemplate=fs.readFileSync(templatePath,'utf8');
+const loginResult=ts.transpileModule(loginTemplate,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext},reportDiagnostics:true});
+if(loginResult.diagnostics?.some(d=>d.category===ts.DiagnosticCategory.Error)) throw new Error('Login template failed compilation');
+const loginCode=loginResult.outputText.replace(/^import .*from ["']react\/jsx-runtime["'];?\s*$/gm,'');
+const legacyTree=ts.createSourceFile('legacy.js',generated,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
+const legacyLogin=legacyTree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='AE');
+if(!legacyLogin) throw new Error('Original login function was not found');
+const returnStatement=legacyLogin.body.statements.find(ts.isReturnStatement);
+if(!returnStatement) throw new Error('Original login return was not found');
+const loginPrelude=generated.slice(legacyLogin.body.getStart(legacyTree)+1,returnStatement.getStart(legacyTree));
+const replacement=`function AE(l){const _jsx=_.jsx,_jsxs=_.jsxs,_Fragment=_.Fragment;${loginPrelude}const [emailOpen,setEmailOpen]=me.useState(false);${loginCode}}`;
+function outsideLoginCalls(code) {
+  const ast=ts.createSourceFile('audit.js',code,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS), calls=[];
+  function visit(n){
+    if(ts.isFunctionDeclaration(n)&&n.name?.text==='AE') return;
+    if(ts.isCallExpression(n)&&ts.isPropertyAccessExpression(n.expression)&&n.expression.expression.getText(ast)==='_'&&['jsx','jsxs'].includes(n.expression.name.text)) calls.push(n.getText(ast));
+    ts.forEachChild(n,visit);
+  }
+  visit(ast);return calls;
+}
+const loggedInCalls=outsideLoginCalls(generated);
+generated=generated.slice(0,legacyLogin.getStart(legacyTree))+replacement+generated.slice(legacyLogin.end);
+if(JSON.stringify(loggedInCalls)!==JSON.stringify(outsideLoginCalls(generated))) throw new Error('Logged-in interface rendering changed');
+const paged=separateOriginalPages(generated);
+generated=paged.code;
+generated=generated.replace('_.jsx("h1",{children:"VaultLab"})','_.jsxs("h1",{className:"vaultlab-wordmark","aria-label":"VaultLab",children:[_.jsx("span",{className:"wordmark-vault",children:"Vault"}),_.jsx("span",{className:"wordmark-lab",children:"Lab"})]})');
+paged.audit.originalHeaderPreserved=false;
+paged.audit.headerChange='Wordmark split into the login logo green colors; remaining header preserved';
+generated=generated.replaceAll('Pose AI','MediaPipe Pose Landmarker Lite').replaceAll('Loading pose AI model','Loading MediaPipe Pose Landmarker Lite');
+const finalTree=ts.createSourceFile('final.js',generated,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
+if(finalTree.parseDiagnostics.length) throw new Error('Final interface failed JavaScript parsing');
+fs.writeFileSync(path.join(target,'app.js'),'import * as __study from "../src/restoredStudyBridge.ts";\nimport "../src/login.css";\nimport "../src/originalPages.css";\nimport "../src/palette.css";\nconst __VaultLabLogo=new URL("../src/assets/vaultlab-logo.png",import.meta.url).href;\n'+generated);
 const cssPath=path.join(target,'assets/index-Cj98egCU.css');
 if(!fs.existsSync(cssPath)) throw new Error('Missing tracked interface stylesheet: restored-app/assets/index-Cj98egCU.css');
 if(hash(fs.readFileSync(cssPath))!=='33bb2c7a2c5f27a834b01fe2e8f9c64e934c21b182115e1d62bc95da803bdbff') throw new Error('Original stylesheet checksum mismatch');
 fs.writeFileSync(path.join(target,'assets/regional-update.css'),regionalUpdateCss);
 fs.writeFileSync(path.join(target,'index.html'),`<!doctype html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>VaultLab</title><link rel="stylesheet" href="/assets/index-Cj98egCU.css"/><link rel="stylesheet" href="/assets/regional-update.css"/></head><body>${regionalUpdateHtml}<div id="root"></div><script type="module" src="/app.js"></script></body></html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>VaultLab</title><link rel="stylesheet" href="/assets/index-Cj98egCU.css"/></head><body><div id="root"></div><script type="module" src="/app.js"></script></body></html>
 `);
-fs.writeFileSync(path.join(target,'baseline/verification.json'),JSON.stringify({originalSha256:hash(source),cssSha256:hash(fs.readFileSync(cssPath)),jsxCallsUnchanged:before.length,changedFunctions:edits.map(({name,owner})=>({name,owner})),generatedSha256:hash(generated)},null,2));
+fs.writeFileSync(path.join(target,'baseline/verification.json'),JSON.stringify({originalSha256:hash(source),cssSha256:hash(fs.readFileSync(cssPath)),jsxCallsUnchangedBeforePagination:before.length,loggedInRenderCallsPreservedBeforePagination:loggedInCalls.length,loginRestyled:true,pagination:paged.audit,changedFunctions:edits.map(({name,owner})=>({name,owner})),generatedSha256:hash(generated)},null,2));
 console.log(`Preserved all ${before.length} interface render expressions and original CSS. Adapted ${edits.length} internal functions.`);

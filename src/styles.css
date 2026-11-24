@@ -12,6 +12,8 @@
   --green: #0f766e;
 }
 
+[hidden] { display: none !important; }
+
 * {
   box-sizing: border-box;
 }

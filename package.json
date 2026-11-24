@@ -2,6 +2,11 @@
   "name": "vaultlab",
   "version": "1.0.0",
   "private": true,
+  "description": "Browser-based pole vault video measurements and interpretable logistic-regression analysis.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "type": "module",
   "scripts": {
     "predev": "node tools/prepare_exact_interface.mjs",
@@ -10,7 +15,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "pretest": "node tools/prepare_exact_interface.mjs",
-    "test": "node tools/test_pose_measurements.mjs"
+    "test": "node tools/test_pose_measurements.mjs && node tools/test_login_screen.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
