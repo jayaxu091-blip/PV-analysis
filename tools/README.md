@@ -4,23 +4,18 @@ Run commands from the repository root.
 
 ## Build and Tests
 
-- `prepare_exact_interface.mjs`: regenerates the preserved interface; runs automatically before development, builds, and tests.
-- `test_pose_measurements.mjs`: bundles and runs the TypeScript test files; use `pnpm test`.
-- `test_login_screen.mjs`: checks the generated login, provider handlers, and email/demo controls; also runs through `pnpm test`.
-- `separate_original_pages.mjs`: turns the preserved panels into four navigable production views.
-- `templates/login-screen.tsx`: source for the current production login; included by the build generator.
+- `prepare_exact_interface.mjs`: prepares the production interface before development, builds, and tests.
+- `separate_original_pages.mjs`: creates the four production views.
+- `templates/login-screen.tsx`: current login interface.
+- `test_pose_measurements.mjs`: runs measurement and model tests.
+- `test_login_screen.mjs`: checks login rendering and handlers.
 
-## Data and Training
+Use `pnpm test` to run both test groups.
 
-- `batch_pose_extract.html` and `run_batch_pose_extract.mjs`: historical video-to-feature extraction workflow.
-- `train_pose_logistic_model.py`: fits pose-feature logistic models and writes model exports.
-- `train_general_logistic_model.py`: historical general-feature model training.
-- `compare_pose_feature_sets.py` and `compare_selected_pose_models.py`: model comparison experiments.
+## Model Training
 
-Training commands can overwrite model exports. They are not needed to run the app.
+- `batch_pose_extract.html`: original feature extractor, also used by regression tests.
+- `run_batch_pose_extract.mjs`: historical browser extraction runner; needs local video files and its configured browser runtime.
+- `train_pose_logistic_model.py`: trains logistic regression from `model_output/vault_pose_extracted_dataset.csv`.
 
-## Local Audits
-
-`run_pose_audit.mjs`, `smoke_pose_v2.mjs`, `render_research_pose_figure.mjs`, `replay_restored_app.mjs`, and `verify_exact_interface.mjs` are historical audit and verification utilities. Some require local video datasets, output files, a machine-specific Playwright installation, or earlier interface assumptions. They are not part of the portable build/test commands above.
-
-Document, slide, and video-production scripts may remain in the local folder but are excluded from GitHub.
+Training can overwrite model exports. It is not needed to run the app.

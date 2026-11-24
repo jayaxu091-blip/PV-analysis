@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "pvanalysis-68252",
+    "site": "vaultlab",
     "public": "dist",
     "ignore": [
       "firebase.json",

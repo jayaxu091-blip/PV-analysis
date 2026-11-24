@@ -61,9 +61,8 @@ The production site is built from `restored-app/`, using a preserved interface c
 | [restored-app/](restored-app/README.md) | Required preserved production interface assets. |
 | [tests/](tests/) | Automated tests and the shared study fixture. |
 | [tools/](tools/README.md) | Build helpers, extraction tools, and model-training scripts. |
-| [model_output/](model_output/README.md) | Model parameters, extracted feature tables, and historical reports. |
-| [backend/](backend/README.md) | Optional historical Python prototype; unused by the deployed browser app. |
-| [docs/](docs/development.md) | Architecture, setup notes, screenshots, and submission preparation. |
+| [model_output/](model_output/README.md) | Study model parameters and extracted feature data. |
+| [docs/](docs/development.md) | Architecture, setup instructions, and screenshots. |
 
 Local papers, competition submissions, raw videos, exports, temporary dependencies, and video-editing scripts are excluded from GitHub. They are not needed to run the app.
 
@@ -75,8 +74,6 @@ These are single-camera estimates. Body-line angle is not center-of-mass launch 
 
 MediaPipe provides the pretrained pose model. VaultLab combines it with vault-specific calculations, interface and storage code, and logistic-regression analysis. React, Firebase, and other third-party components retain their own licenses; see [NOTICE](NOTICE).
 
-## Contributing and License
+## License
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for a small contribution workflow. Original project code is released under the [MIT License](LICENSE).
-
-Prepared for the Congressional App Challenge. Hack Club certificate submission preparation is recorded in [docs/hackclub-submission.md](docs/hackclub-submission.md); this repository does not claim certification.
+Original project code is released under the [MIT License](LICENSE). Before proposing a change, run `pnpm test` and `pnpm build`.

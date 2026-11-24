@@ -26,7 +26,7 @@ Demo mode is the easiest way to review a fresh checkout and requires no account.
 
 For an independent deployment, configure your own Firebase project and supported sign-in providers, update the public client configuration, and add your local and deployed domains to its authorized domains. The preserved interface also embeds its original Firebase client initialization; adapting it to a different project requires updating the generator consistently with `src/firebase.ts` and testing sign-in. Simply changing `src/firebase.ts` does not reconfigure the archived interface.
 
-The current public app is https://vaultlab.web.app/ and its Hosting configuration is `firebase.new-site.json`. The older `firebase.json` targets `pvanalysis-68252`; choose the intended configuration explicitly when deploying. Building or cleaning the repository does not deploy either site.
+The current public app is https://vaultlab.web.app/ and its Hosting configuration is `firebase.json`. Building or cleaning the repository does not deploy the site.
 
 ## Tests
 

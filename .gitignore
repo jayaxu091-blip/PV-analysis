@@ -117,3 +117,24 @@ dataset_preview/
 !/tools/templates/
 /tools/templates/*
 !/tools/templates/login-screen.tsx
+
+# Historical files retained locally, but not needed in the public app repository.
+/backend/
+/CONTRIBUTING.md
+/docs/hackclub-submission.md
+/docs/repository-cleanup.md
+/firebase.new-site.json
+/index.html
+/model_output/general_pose_vault_logistic_model.json
+/model_output/general_vault_logistic_model.json
+/model_output/pose_training_report.txt
+/model_output/training_report.txt
+/model_output/vault_training_dataset.csv
+/tools/compare_pose_feature_sets.py
+/tools/compare_selected_pose_models.py
+/tools/render_research_pose_figure.mjs
+/tools/replay_restored_app.mjs
+/tools/run_pose_audit.mjs
+/tools/smoke_pose_v2.mjs
+/tools/train_general_logistic_model.py
+/tools/verify_exact_interface.mjs

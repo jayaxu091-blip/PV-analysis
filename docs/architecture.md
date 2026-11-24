@@ -8,7 +8,7 @@
 4. `tools/separate_original_pages.mjs` creates the Jump analysis, Jump summary, Logistic model, and Attempt Log views from the original panels. It keeps the video mounted when switching views.
 5. The bridge calls `src/poseAnalysis.ts` and `src/studyMeasurements.ts` and preserves full precision separately from rounded interface values.
 6. `src/login.css`, `src/originalPages.css`, and `src/palette.css` style the current production interface. The logo is in `src/assets/`.
-7. Vite serves `restored-app/` and builds to `dist/`. The current site at https://vaultlab.web.app/ uses `firebase.new-site.json`; `firebase.json` targets the older site.
+7. Vite serves `restored-app/` and builds to `dist/`. `firebase.json` targets the current site at https://vaultlab.web.app/.
 
 The baseline JavaScript and original stylesheet are checked in because a fresh clone needs them to build. Generated entrypoints, build reports, and production bundles are ignored.
 
@@ -24,7 +24,6 @@ The baseline JavaScript and original stylesheet are checked in because a fresh c
 - Attempt metadata is stored in browser local storage, scoped to the active user.
 - Saved video blobs are stored in IndexedDB through `src/videoStore.ts`.
 - Pose extraction runs in the browser using externally loaded MediaPipe assets.
-- The optional `backend/` prototype is independent of the current browser workflow.
 
 ## Verification
 
